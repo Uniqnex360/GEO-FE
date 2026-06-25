@@ -7,7 +7,6 @@ export default function ProtectedRoute({
   children: React.ReactNode;
 }) {
   const token = tokenStorage.getAccess();
-  const refreshToekn = tokenStorage.getRefresh();
 
   if (!token) {
     return <Navigate to="/login" replace />;

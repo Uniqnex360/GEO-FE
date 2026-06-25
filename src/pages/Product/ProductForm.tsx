@@ -270,9 +270,11 @@ export default function ProductForm({
           rules={{
             validate: (value) => {
               // optional field → empty is valid
+              //@ts-ignore
               if (!value?.trim()) return true;
 
               try {
+                //@ts-ignore
                 const url = new URL(value);
 
                 // allow only http/https

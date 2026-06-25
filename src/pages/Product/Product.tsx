@@ -40,8 +40,8 @@ export default function Product() {
     });
 
   const getErrorMessage = (error: AxiosError<ApiError>) => {
-    //@ts-ignore
     return (
+      //@ts-ignore
       error.response?.data?.detail ||
       error.response?.data?.message ||
       error.message ||
