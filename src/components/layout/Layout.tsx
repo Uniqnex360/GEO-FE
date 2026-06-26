@@ -5,7 +5,7 @@ import {
   FiHome,
   FiBriefcase,
   FiPackage,
-  // FiActivity,
+  FiActivity,
   // FiBarChart2,
   // FiFileText,
   // FiTarget,
@@ -23,7 +23,7 @@ const navItems = [
     label: "Product",
     icon: FiPackage,
   },
-  // { to: "/admin/query-management", label: "Query Management", icon: FiSearch },
+  { to: "/admin/chat", label: "Chat", icon: FiActivity },
   // {
   //   to: "/admin/ai-monitoring",
   //   label: "AI Engine Monitoring",

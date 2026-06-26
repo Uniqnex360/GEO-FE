@@ -8,6 +8,8 @@ import Layout from "../components/layout/Layout";
 import ProtectedRoute from "./producted_route";
 import BrandRoutes from "./brand";
 import ProductRoutes from "./product_route";
+import AISandboxRoutes from "./AISandbox";
+import ChatRoutes from "./Chat";
 
 export default function AppRouter() {
   return (
@@ -15,6 +17,7 @@ export default function AppRouter() {
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
+        {AISandboxRoutes}
 
         {/* Redirect root */}
         <Route path="/" element={<Navigate to="/admin" />} />
@@ -33,6 +36,7 @@ export default function AppRouter() {
           {/* routes */}
           {BrandRoutes}
           {ProductRoutes}
+          {ChatRoutes}
         </Route>
       </Routes>
     </BrowserRouter>
