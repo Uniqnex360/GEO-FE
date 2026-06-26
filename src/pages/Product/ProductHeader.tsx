@@ -6,9 +6,9 @@ interface Props {
 
 export default function ProductHeader({ onCreate }: Props) {
   return (
-    <div className="px-6 py-6 flex justify-between bg-slate-950">
+    <div className="px-6 py-6 flex justify-between bg-white">
       <div>
-        <h1 className="text-2xl font-bold text-white">Products</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Products</h1>
 
         <p className="text-sm text-gray-400">
           Manage tracked products and competitors

@@ -30,12 +30,12 @@ export default function AppDrawer({
   return (
     <>
       <div
-        className="fixed inset-0 bg-slate-950/70 z-40 transition-opacity"
+        className="fixed inset-0 bg-white/70 z-40 transition-opacity"
         onClick={onClose}
       />
-      <div className="fixed inset-y-0 right-0 w-full max-w-2xl bg-slate-950 shadow-xl z-50 overflow-hidden flex flex-col">
+      <div className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white/70 shadow-xl z-50 overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-xl font-semibold text-white">{title}</h2>
+          <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"

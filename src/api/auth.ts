@@ -1,6 +1,6 @@
 import { api } from "./base";
 
-const API_V1 = "/api/v1/";
+const API_V1 = "api/v1/";
 
 const ACCESS_TOKEN_API = API_V1 + "auth/access_token/";
 const REFRESH_TOKEN_API = API_V1 + "auth/refresh_token/";

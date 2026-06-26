@@ -74,17 +74,19 @@ export default function Layout() {
     <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* SIDEBAR */}
       <aside
-        className={`bg-gray-900 text-white flex flex-col transition-all duration-300 ${
+        className={`bg-white text-slate-900 flex flex-col transition-all duration-300 border-r border-gray-200 ${
           collapsed ? "w-20" : "w-64"
         }`}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-center border-b border-gray-800 flex-shrink-0">
-          <h1 className="font-bold text-lg">{collapsed ? "G" : "GEO"}</h1>
+        <div className="h-16 flex items-center justify-center border-b border-gray-200 flex-shrink-0">
+          <h1 className="font-bold text-lg text-slate-900">
+            {collapsed ? "G" : "GEO"}
+          </h1>
         </div>
 
         {/* Navigation with vertical scrolling */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-2 scrollbar-thin scrollbar-thumb-gray-700">
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-2 scrollbar-thin scrollbar-thumb-gray-300">
           {navItems.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
 
@@ -97,8 +99,8 @@ export default function Layout() {
                   gap-3 px-4 py-3 rounded-lg transition-all font-medium
                   ${
                     active
-                      ? "bg-gray-800 text-white"
-                      : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                      ? "bg-gray-100 text-blue-600"
+                      : "text-slate-600 hover:bg-gray-50 hover:text-slate-900"
                   }`}
               >
                 {/* Active left border */}
@@ -106,7 +108,9 @@ export default function Layout() {
                   <span className="absolute left-0 top-0 h-full w-1 bg-blue-500 rounded-r" />
                 )}
 
-                <Icon className="text-xl min-w-[20px]" />
+                <Icon
+                  className={`text-xl min-w-[20px] ${active ? "text-blue-600" : "text-slate-500"}`}
+                />
 
                 {!collapsed && (
                   <span className="text-sm whitespace-nowrap">{label}</span>
@@ -118,17 +122,17 @@ export default function Layout() {
       </aside>
 
       {/* TOGGLE RAIL */}
-      <div className="w-10 bg-gray-900 flex items-start justify-center pt-4">
+      <div className="w-10 bg-white flex items-start justify-center pt-4 border-r border-gray-200">
         <button
           onClick={() => setCollapsed((prev) => !prev)}
-          className="text-white hover:bg-gray-800 p-2 rounded-lg transition"
+          className="text-slate-600 hover:bg-gray-100 p-2 rounded-lg transition"
         >
           <FiMenu size={20} />
         </button>
       </div>
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 overflow-auto bg-slate-950">
+      <main className="flex-1 overflow-auto bg-white">
         <Outlet />
       </main>
     </div>

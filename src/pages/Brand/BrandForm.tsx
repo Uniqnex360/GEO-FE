@@ -9,6 +9,7 @@ export type BrandCU = {
   domain: string;
   industry: string;
   country: string;
+  competitor: string;
 };
 
 interface Props {
@@ -53,7 +54,7 @@ export default function BrandForm({
       />
 
       <AppFormInput
-        label="Domain"
+        label="Website"
         name="domain"
         placeholder="Domain"
         register={register}
@@ -67,6 +68,15 @@ export default function BrandForm({
         placeholder="Industry"
         register={register}
         error={errors.industry}
+        formState={formState}
+      />
+
+      <AppFormInput
+        label="Competitors (comma separated)"
+        name="competitor"
+        placeholder=""
+        register={register}
+        error={errors.competitor}
         formState={formState}
       />
 

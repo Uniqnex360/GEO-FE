@@ -15,7 +15,7 @@ export default function ProductDelete({
 
   return (
     <div className="fixed inset-0 bg-black/60 flex justify-center items-center">
-      <div className="bg-slate-900 p-6 rounded-lg w-[400px]">
+      <div className="bg-white p-6 rounded-lg w-[400px]">
         <h2 className="text-lg font-bold">Delete Brand</h2>
 
         <p className="mt-4 text-gray-400">Are you sure?</p>

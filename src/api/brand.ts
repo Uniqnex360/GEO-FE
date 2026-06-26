@@ -14,6 +14,7 @@ export interface Brand {
   domain: string;
   industry: string;
   country: string;
+  competitor: string;
 }
 
 export type BrandCU = Omit<Brand, "id">;

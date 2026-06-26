@@ -65,17 +65,17 @@ export default function AppTable({
 
   if (isLoading) {
     return (
-      <div className="bg-gray-800 rounded-lg shadow">
+      <div className="bg-white rounded-lg shadow">
         <div className="p-8 text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-white">Loading...</p>
+          <p className="mt-2 text-slate-900">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg shadow overflow-hidden">
+    <div className="bg-white rounded-lg shadow overflow-hidden">
       {/* horizontal scroll */}
       {/* <div className="overflow-x-auto"> */}
       <div
@@ -101,18 +101,18 @@ export default function AppTable({
           "
         >
           <table className="w-full min-w-max border-collapse">
-            <thead className="bg-gray-800 border-b border-gray-300 sticky top-0 z-0">
+            <thead className="bg-white border-b border-gray-300 sticky top-0 z-0">
               <tr>
                 {columns.map((column) => (
                   <th
                     key={column.key}
                     style={{ width: column.width || "auto" }}
-                    className="px-6 py-3 text-left text-xs font-medium text-white tracking-wider"
+                    className="px-6 py-3 text-left text-xs font-medium bg-white tracking-wider"
                   >
                     {column.sortable ? (
                       <button
                         onClick={() => onSort?.(column.key)}
-                        className="flex items-center gap-3 hover:text-gray-700 transition-colors w-full"
+                        className="flex items-center gap-3 text-slate-900 hover:text-slate-700 transition-colors w-full"
                       >
                         <span className="truncate">{column.label}</span>
                         <span className="shrink-0">
@@ -131,7 +131,7 @@ export default function AppTable({
                           ) : (
                             <FiChevronDown
                               size={14}
-                              className="text-gray-800"
+                              className="text-slate-800"
                             />
                           )}
                         </span>
@@ -144,12 +144,12 @@ export default function AppTable({
               </tr>
             </thead>
 
-            <tbody className="bg-gray-800 divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-200">
               {data.length === 0 ? (
                 <tr>
                   <td
                     colSpan={columns.length}
-                    className="px-6 py-4 text-center text-gray-500"
+                    className="px-6 py-4 text-center text-slate-900"
                   >
                     No data available
                   </td>
@@ -158,7 +158,7 @@ export default function AppTable({
                 data.map((row, index) => (
                   <tr
                     key={index}
-                    className="hover:bg-gray-700 transition-colors"
+                    className="hover:bg-gray-50 transition-colors"
                   >
                     {columns.map((column) => {
                       // ✅ FIX: compute once
@@ -167,7 +167,7 @@ export default function AppTable({
                       return (
                         <td
                           key={column.key}
-                          className="px-6 py-4 text-sm text-white"
+                          className="px-6 py-4 text-sm text-slate-900"
                         >
                           <div
                             title={String(value || "")}

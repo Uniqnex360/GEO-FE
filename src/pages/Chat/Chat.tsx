@@ -65,6 +65,20 @@ export default function Chat() {
           if (event.type === "result") {
             setResult(event.content);
           }
+
+          if (event.type === "error") {
+            setLogs((prev) => [
+              ...prev,
+              {
+                color: event.color || "#ef4444",
+                message: event.message,
+              },
+            ]);
+
+            setLoading(false);
+
+            return;
+          }
         },
       );
     } catch (error) {
@@ -84,19 +98,19 @@ export default function Chat() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col antialiased selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col antialiased selection:bg-indigo-500/20">
       {/* --- TOP HEADER NAVIGATION LAYER --- */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-800 bg-slate-900/80 px-6 py-4 backdrop-blur-md">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/80 px-6 py-4 backdrop-blur-md">
         <div className="flex items-center gap-4">
           {/* Model Selector Placement (Top Left) */}
           <div className="relative">
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
               Engine Model Target
             </label>
             <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
-              className="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all cursor-pointer"
+              className="bg-white border border-slate-300 text-slate-800 rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all cursor-pointer"
             >
               {AVAILABLE_MODELS.map((model) => (
                 <option key={model.id} value={model.id}>
@@ -108,10 +122,10 @@ export default function Chat() {
         </div>
 
         <div className="text-right">
-          <h1 className="text-md font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+          <h1 className="text-md font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
             GEO Optimization Lab
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Generative Engine Footprint Sandbox
           </p>
         </div>
@@ -121,9 +135,9 @@ export default function Chat() {
       <main className="flex-1 max-w-4xl w-full mx-auto px-6 pt-6 pb-96 space-y-8">
         {/* Dynamic State Placeholder */}
         {!loading && logs.length === 0 && !result && (
-          <div className="text-center py-20 border-2 border-dashed border-slate-800 rounded-2xl max-w-xl mx-auto mt-12 space-y-3">
+          <div className="text-center py-20 border-2 border-dashed border-slate-300 rounded-2xl max-w-xl mx-auto mt-12 space-y-3">
             <div className="text-3xl">🌐</div>
-            <h3 className="text-slate-300 font-semibold">
+            <h3 className="text-slate-700 font-semibold">
               No Active Audit Plan
             </h3>
             <p className="text-slate-500 text-sm max-w-sm mx-auto">
@@ -136,8 +150,8 @@ export default function Chat() {
 
         {/* Status Activity Stepper Layer */}
         {logs.length > 0 && (
-          <section className="bg-slate-800/40 border border-slate-800/80 rounded-xl p-5 space-y-3 shadow-xl backdrop-blur-sm">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <section className="bg-white border border-slate-200 shadow-sm rounded-xl p-5 space-y-3 backdrop-blur-sm">
+            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
               Graph Engine Execution Steps
             </h4>
             <div className="grid gap-2 text-sm">
@@ -152,11 +166,11 @@ export default function Chat() {
                     {loading && isLatest ? (
                       <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
                     ) : (
-                      <span className="text-emerald-400 font-bold text-md">
+                      <span className="text-emerald-600 font-bold text-md">
                         ✓
                       </span>
                     )}
-                    <span className="font-mono text-xs tracking-tight brightness-110">
+                    <span className="font-mono text-xs tracking-tight brightness-90">
                       {log.message}
                     </span>
                   </div>
@@ -168,17 +182,17 @@ export default function Chat() {
 
         {/* Main Strategic Output Document Text Window */}
         {result && (
-          <article className="bg-slate-800/20 border border-slate-800 rounded-xl p-6 shadow-2xl backdrop-blur-md animate-fadeIn">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-              <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">
+          <article className="bg-white border border-slate-200 rounded-xl p-6 shadow-md animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">
                 AI Strategy Playbook Response
               </span>
-              <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-300 rounded text-[11px] font-mono border border-indigo-500/20">
+              <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[11px] font-mono border border-indigo-100">
                 Markdown Render
               </span>
             </div>
 
-            <pre className="text-slate-300 font-sans text-sm leading-relaxed whitespace-pre-wrap selection:bg-indigo-500/40">
+            <pre className="text-slate-800 font-sans text-sm leading-relaxed whitespace-pre-wrap selection:bg-indigo-200">
               {result}
             </pre>
             <div ref={resultEndRef} />
@@ -187,12 +201,12 @@ export default function Chat() {
       </main>
 
       {/* --- FLOATING CONTROLS CONSOLE LAYER (Bottom Center) --- */}
-      <footer className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent pointer-events-none z-40">
+      <footer className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-50 via-slate-50/90 to-transparent pointer-events-none z-40">
         <div className="max-w-2xl mx-auto w-full pointer-events-auto">
           {/* Active Graph Loader UI (Placed directly above input box) */}
           {loading && (
-            <div className="flex items-center justify-center gap-3 bg-indigo-950/80 border border-indigo-500/30 text-indigo-200 text-xs font-medium px-4 py-2.5 rounded-full shadow-lg backdrop-blur-md mb-4 w-fit mx-auto animate-bounce">
-              <div className="h-3 w-3 border-2 border-indigo-300 border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center justify-center gap-3 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-medium px-4 py-2.5 rounded-full shadow-md backdrop-blur-md mb-4 w-fit mx-auto animate-bounce">
+              <div className="h-3 w-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
               <span>
                 LangGraph Strategy State-Machine actively evaluating web
                 indexes...
@@ -203,12 +217,12 @@ export default function Chat() {
           {/* Core Chat Console / Form Parameters Setup */}
           <form
             onSubmit={handleGenerate}
-            className="bg-slate-800 border border-slate-700/80 rounded-2xl shadow-2xl p-4 space-y-3 transition-all focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent group"
+            className="bg-white border border-slate-200 rounded-2xl shadow-xl p-4 space-y-3 transition-all focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent group"
           >
             {/* Top Grid Field Parameters */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
                   Product/Brand Name
                 </label>
                 <input
@@ -218,7 +232,7 @@ export default function Chat() {
                   onChange={(e) => setProductName(e.target.value)}
                   placeholder="e.g. Linear"
                   disabled={loading}
-                  className="w-full bg-slate-900/60 border border-slate-700/50 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:bg-slate-900 transition-all disabled:opacity-50"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all disabled:opacity-50"
                 />
               </div>
               <div>
@@ -232,15 +246,15 @@ export default function Chat() {
                   onChange={(e) => setProductUrl(e.target.value)}
                   placeholder="e.g. https://linear.app"
                   disabled={loading}
-                  className="w-full bg-slate-900/60 border border-slate-700/50 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:bg-slate-900 transition-all disabled:opacity-50"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all disabled:opacity-50"
                 />
               </div>
             </div>
 
             {/* Prompt Extension / Context Box Area */}
-            <div className="relative flex items-end bg-slate-900/60 border border-slate-700/50 rounded-xl px-3 py-2">
+            <div className="relative flex items-end bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
               <div className="flex-1">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
                   Extra Context / Research Goals
                 </label>
                 <textarea
@@ -249,7 +263,7 @@ export default function Chat() {
                   placeholder="Add targeting instructions, focus keywords, or competitor specifications..."
                   disabled={loading}
                   rows={2}
-                  className="w-full bg-transparent border-0 p-0 text-sm text-slate-100 placeholder-slate-500 focus:ring-0 focus:outline-none resize-none disabled:opacity-50"
+                  className="w-full bg-transparent border-0 p-0 text-sm text-slate-800 placeholder-slate-400 focus:ring-0 focus:outline-none resize-none disabled:opacity-50"
                 />
               </div>
 
@@ -257,7 +271,7 @@ export default function Chat() {
               <button
                 type="submit"
                 disabled={loading || !productName.trim() || !productUrl.trim()}
-                className="ml-3 inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-40 disabled:hover:bg-indigo-600 disabled:scale-100"
+                className="ml-3 inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-40 disabled:hover:bg-indigo-600 disabled:scale-100"
               >
                 {loading ? "Processing" : "Execute Run"}
               </button>

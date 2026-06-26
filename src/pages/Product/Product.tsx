@@ -79,7 +79,7 @@ export default function Product() {
   });
 
   const brandChoice: AppMetaList[] = brandChoiceData ?? [];
-  console.log("brandChoice", brandChoice)
+  console.log("brandChoice", brandChoice);
 
   // =========================
   // Mutations
@@ -125,7 +125,7 @@ export default function Product() {
       key: "name",
       label: "PRODUCT",
       render: (value: string) => (
-        <span className="font-semibold text-white">
+        <span className="font-semibold text-slate-900">
           {value ?? "Unknown Product"}
         </span>
       ),
@@ -134,7 +134,7 @@ export default function Product() {
       key: "brand_name",
       label: "BRAND",
       render: (value: string) => (
-        <span className="text-gray-400 font-medium">
+        <span className="text-slate-900 font-medium">
           {value ?? "Unknown Brand"}
         </span>
       ),
@@ -149,8 +149,8 @@ export default function Product() {
         const combinedSub = [mpn, upc].filter(Boolean).join(" · ");
 
         return (
-          <div className="flex flex-col text-xs text-gray-500 font-mono">
-            <span className="text-gray-400 font-sans font-medium">{sku}</span>
+          <div className="flex flex-col text-xs text-slate-900 font-mono">
+            <span className="text-slate-900 font-sans font-medium">{sku}</span>
             {combinedSub && <span>{combinedSub}</span>}
           </div>
         );
@@ -160,67 +160,75 @@ export default function Product() {
       key: "category",
       label: "CATEGORY",
       render: (value: string) => (
-        <span className="text-gray-400 font-medium">{value ?? "-"}</span>
+        <span className="text-slate-900 font-medium">{value ?? "-"}</span>
       ),
     },
-    {
-      key: "visibility",
-      label: "VISIBILITY",
-      render: (value: any) => {
-        const score = typeof value === "number" ? value : 0;
-        return (
-          <div className="flex items-center gap-4 min-w-[140px]">
-            <div className="w-full bg-gray-800 rounded-full h-1.5">
-              <div
-                className="bg-cyan-400 h-1.5 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.4)]"
-                style={{ width: `${Math.min(Math.max(score, 0), 100)}%` }}
-              />
-            </div>
-            <span className="text-gray-300 font-medium w-6 text-right">
-              {score}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      key: "rank",
-      label: "RANK",
-      render: (value: any) => (
-        <span className="text-gray-300 font-semibold">
-          {value !== undefined && value !== null ? `#${value}` : "-"}
-        </span>
-      ),
-    },
-    {
-      key: "trend",
-      label: "TREND",
-      render: (value: any) => {
-        if (value === undefined || value === null)
-          return <span className="text-gray-500">-</span>;
-        const numericTrend = parseFloat(value);
-        const isNegative = numericTrend < 0;
-        const formattedTrend =
-          numericTrend > 0 ? `+${numericTrend}%` : `${numericTrend}%`;
+    // {
+    //   key: "visibility",
+    //   label: "VISIBILITY",
+    //   render: (value: any) => {
+    //     const score = typeof value === "number" ? value : 0;
+    //     return (
+    //       <div className="flex items-center gap-4 min-w-[140px]">
+    //         <div className="w-full bg-gray-800 rounded-full h-1.5">
+    //           <div
+    //             className="bg-cyan-400 h-1.5 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.4)]"
+    //             style={{ width: `${Math.min(Math.max(score, 0), 100)}%` }}
+    //           />
+    //         </div>
+    //         <span className="text-gray-300 font-medium w-6 text-right">
+    //           {score}
+    //         </span>
+    //       </div>
+    //     );
+    //   },
+    // },
+    // {
+    //   key: "rank",
+    //   label: "RANK",
+    //   render: (value: any) => (
+    //     <span className="text-gray-300 font-semibold">
+    //       {value !== undefined && value !== null ? `#${value}` : "-"}
+    //     </span>
+    //   ),
+    // },
+    // {
+    //   key: "trend",
+    //   label: "TREND",
+    //   render: (value: any) => {
+    //     if (value === undefined || value === null)
+    //       return <span className="text-gray-500">-</span>;
+    //     const numericTrend = parseFloat(value);
+    //     const isNegative = numericTrend < 0;
+    //     const formattedTrend =
+    //       numericTrend > 0 ? `+${numericTrend}%` : `${numericTrend}%`;
 
-        return (
-          <div className="flex items-center gap-3">
-            <span
-              className={`font-semibold text-sm ${isNegative ? "text-red-500" : "text-emerald-400"}`}
-            >
-              {formattedTrend}
-            </span>
-            <svg className="w-12 h-4 overflow-visible" viewBox="0 0 50 20">
-              <path
-                d={isNegative ? "M0,5 Q25,18 50,15" : "M0,15 Q25,12 50,5"}
-                fill="none"
-                stroke={isNegative ? "#ef4444" : "#34d399"}
-                strokeWidth="2"
-              />
-            </svg>
-          </div>
-        );
-      },
+    //     return (
+    //       <div className="flex items-center gap-3">
+    //         <span
+    //           className={`font-semibold text-sm ${isNegative ? "text-red-500" : "text-emerald-400"}`}
+    //         >
+    //           {formattedTrend}
+    //         </span>
+    //         <svg className="w-12 h-4 overflow-visible" viewBox="0 0 50 20">
+    //           <path
+    //             d={isNegative ? "M0,5 Q25,18 50,15" : "M0,15 Q25,12 50,5"}
+    //             fill="none"
+    //             stroke={isNegative ? "#ef4444" : "#34d399"}
+    //             strokeWidth="2"
+    //           />
+    //         </svg>
+    //       </div>
+    //     );
+    //   },
+    // },
+    {
+      key: "analytics.avg_share_of_voice",
+      label: "Share of Voice",
+    },
+    {
+      key: "analytics.visibility_rate",
+      label: "Visibility",
     },
     {
       key: "actions",

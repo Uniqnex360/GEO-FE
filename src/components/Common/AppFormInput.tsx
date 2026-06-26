@@ -47,7 +47,7 @@ const AppFormInput = <T extends FieldValues>({
 
   return (
     <div className={`mb-3 ${className} w-full`}>
-      <label className="block mb-1 text-white font-medium">
+      <label className="block mb-1 text-slate-900 font-medium">
         {label} {rules?.required && <span className="text-red-500">*</span>}
       </label>
 
@@ -63,7 +63,7 @@ const AppFormInput = <T extends FieldValues>({
 
       {/* SELECT */}
       {type === "select" && (
-        <select {...register(name, rules)} className={`${inputClass} bg-gray-800 text-white`}>
+        <select {...register(name, rules)} className={`${inputClass} bg-white text-slate-900`}>
           <option value="">Select {label}</option>
           {options.map((option) => (
             <option key={String(option.id)} value={String(option.id)}>

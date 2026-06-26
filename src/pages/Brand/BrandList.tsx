@@ -146,7 +146,7 @@ export default function Brand() {
             </div>
 
             <div className="flex flex-col">
-              <span className="font-semibold text-white">{brandName}</span>
+              <span className="font-semibold text-slate-900">{brandName}</span>
 
               {domain && (
                 <span className="text-xs text-gray-400">{domain}</span>
@@ -162,7 +162,7 @@ export default function Brand() {
       label: "INDUSTRY",
 
       render: (value: string) => (
-        <span className="text-gray-400">{value ?? "-"}</span>
+        <span className="text-slate-900">{value ?? "-"}</span>
       ),
     },
 
@@ -171,7 +171,7 @@ export default function Brand() {
       label: "COUNTRY",
 
       render: (value: string) => (
-        <span className="text-gray-400">{value ?? "-"}</span>
+        <span className="text-slate-900">{value ?? "-"}</span>
       ),
     },
 
@@ -184,7 +184,7 @@ export default function Brand() {
 
         return (
           <div className="flex items-center gap-4 min-w-[120px]">
-            <div className="w-full bg-gray-800 rounded-full h-1.5">
+            <div className="w-full  rounded-full h-1.5">
               <div
                 className="bg-cyan-400 h-1.5 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.4)]"
                 style={{
@@ -193,7 +193,7 @@ export default function Brand() {
               />
             </div>
 
-            <span className="text-gray-300 font-medium w-6 text-right">
+            <span className="text-slate-900 font-medium w-6 text-right">
               {visibilityScore}
             </span>
           </div>

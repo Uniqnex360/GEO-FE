@@ -200,7 +200,7 @@ api.interceptors.response.use(
         console.log("[REFRESH] Refresh token exists:", !!refreshToken);
 
         const res = await axios.post(
-          import.meta.env.VITE_API_BASE_URL + "/api/v1/auth/refresh_token/",
+          import.meta.env.VITE_API_BASE_URL + "api/v1/auth/refresh_token/",
           {
             refresh_token: refreshToken,
           },

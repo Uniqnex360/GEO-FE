@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 
 import AppFormInput from "../../components/Common/AppFormInput";
 import { type ProductCU } from "../../api/product";
@@ -24,7 +24,7 @@ export default function ProductForm({
     register,
     handleSubmit,
     reset,
-    control,
+    // control,
     formState,
     formState: { errors },
   } = useForm<ProductCU>({
@@ -60,23 +60,23 @@ export default function ProductForm({
   });
 
   // Dynamic Array Handlers for Features and FAQs
-  const {
-    fields: featureFields,
-    append: appendFeature,
-    remove: removeFeature,
-  } = useFieldArray({
-    control,
-    name: "features",
-  });
+  // const {
+  //   fields: featureFields,
+  //   append: appendFeature,
+  //   remove: removeFeature,
+  // } = useFieldArray({
+  //   control,
+  //   name: "features",
+  // });
 
-  const {
-    fields: faqFields,
-    append: appendFaq,
-    remove: removeFaq,
-  } = useFieldArray({
-    control,
-    name: "faqs",
-  });
+  // const {
+  //   fields: faqFields,
+  //   append: appendFaq,
+  //   remove: removeFaq,
+  // } = useFieldArray({
+  //   control,
+  //   name: "faqs",
+  // });
 
   useEffect(() => {
     if (initialData) {
@@ -158,41 +158,6 @@ export default function ProductForm({
             formState={formState}
             options={brandOption}
           />
-          {/* <AppFormInput
-            label="Brand Name (Optional)"
-            name="brand_name"
-            placeholder="e.g. Northwave Audio"
-            register={register}
-            error={errors.brand_name}
-            formState={formState}
-          /> */}
-          <AppFormInput
-            label="Manufacturer"
-            name="manufacturer"
-            placeholder="Manufacturer name"
-            register={register}
-            error={errors.manufacturer}
-            formState={formState}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-          <AppFormInput
-            label="Model Number"
-            name="model_number"
-            placeholder="MN-900"
-            register={register}
-            error={errors.model_number}
-            formState={formState}
-          />
-          <AppFormInput
-            label="Product Type"
-            name="product_type"
-            placeholder="Premium Electronics"
-            register={register}
-            error={errors.product_type}
-            formState={formState}
-          />
           <AppFormInput
             label="Category"
             name="category"
@@ -201,6 +166,42 @@ export default function ProductForm({
             error={errors.category}
             formState={formState}
           />
+          {/* <AppFormInput
+            label="Brand Name (Optional)"
+            name="brand_name"
+            placeholder="e.g. Northwave Audio"
+            register={register}
+            error={errors.brand_name}
+            formState={formState}
+          /> */}
+          {/* <AppFormInput
+            label="Manufacturer"
+            name="manufacturer"
+            placeholder="Manufacturer name"
+            register={register}
+            error={errors.manufacturer}
+            formState={formState}
+          /> */}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+          {/* <AppFormInput
+            label="Model Number"
+            name="model_number"
+            placeholder="MN-900"
+            register={register}
+            error={errors.model_number}
+            formState={formState}
+          /> */}
+          {/* <AppFormInput
+            label="Product Type"
+            name="product_type"
+            placeholder="Premium Electronics"
+            register={register}
+            error={errors.product_type}
+            formState={formState}
+          /> */}
+          
         </div>
       </div>
 
@@ -235,7 +236,7 @@ export default function ProductForm({
             formState={formState}
           />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
           <AppFormInput
             label="GTIN"
             name="gtin"
@@ -252,11 +253,11 @@ export default function ProductForm({
             error={errors.ean}
             formState={formState}
           />
-        </div>
+        </div> */}
       </div>
 
       {/* SECTION 3: DATA DETAILS & LINKS */}
-      <div>
+      {/* <div>
         <h3 className="text-cyan-400 font-semibold border-b border-gray-700 pb-1 mb-4 text-sm uppercase tracking-wider">
           Descriptions & Links
         </h3>
@@ -329,10 +330,10 @@ export default function ProductForm({
             formState={formState}
           />
         </div>
-      </div>
+      </div> */}
 
       {/* SECTION 4: FINANCIALS & RATINGS */}
-      <div>
+      {/* <div>
         <h3 className="text-cyan-400 font-semibold border-b border-gray-700 pb-1 mb-4 text-sm uppercase tracking-wider">
           Pricing & Performance
         </h3>
@@ -401,10 +402,10 @@ export default function ProductForm({
             formState={formState}
           />
         </div>
-      </div>
+      </div> */}
 
       {/* SECTION 5: SEARCH ENGINE METADATA */}
-      <div>
+      {/* <div>
         <h3 className="text-cyan-400 font-semibold border-b border-gray-700 pb-1 mb-4 text-sm uppercase tracking-wider">
           SEO Metadata
         </h3>
@@ -435,10 +436,10 @@ export default function ProductForm({
             formState={formState}
           />
         </div>
-      </div>
+      </div> */}
 
       {/* SECTION 6: DYNAMIC FEATURES LIST */}
-      <div>
+      {/* <div>
         <div className="flex justify-between items-center border-b border-gray-700 pb-1 mb-3">
           <h3 className="text-cyan-400 font-semibold text-sm uppercase tracking-wider">
             Product Features
@@ -455,7 +456,7 @@ export default function ProductForm({
         {featureFields.map((field, index) => (
           <div
             key={field.id}
-            className="flex items-end gap-2 mb-2 bg-gray-900 p-2 rounded border border-gray-800"
+            className="flex items-end gap-2 mb-2 bg-white p-2 rounded border border-gray-800"
           >
             <div className="flex-1">
               <AppFormInput
@@ -476,10 +477,10 @@ export default function ProductForm({
             </button>
           </div>
         ))}
-      </div>
+      </div> */}
 
       {/* SECTION 7: DYNAMIC FAQS LIST */}
-      <div>
+      {/* <div>
         <div className="flex justify-between items-center border-b border-gray-700 pb-1 mb-3">
           <h3 className="text-cyan-400 font-semibold text-sm uppercase tracking-wider">
             Product FAQs
@@ -498,7 +499,7 @@ export default function ProductForm({
         {faqFields.map((field, index) => (
           <div
             key={field.id}
-            className="space-y-2 mb-4 bg-gray-900 p-3 rounded border border-gray-800"
+            className="space-y-2 mb-4 bg-white p-3 rounded border border-gray-800"
           >
             <div className="flex justify-between items-center">
               <span className="text-xs text-gray-400 font-medium">
@@ -541,7 +542,7 @@ export default function ProductForm({
             />
           </div>
         ))}
-      </div>
+      </div> */}
 
       {/* CONTROL ACTIONS BAR */}
       <button
