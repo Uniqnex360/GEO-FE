@@ -49,7 +49,7 @@ export default function Chat() {
 
     try {
       await streamApi(
-        "/api/v1/chat/init_llm_analyzes/",
+        "api/v1/chat/init_llm_analyzes/",
         {
           product_name: productName,
           product_url: productUrl,
