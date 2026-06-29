@@ -12,7 +12,7 @@ export default function AppHeader({
   onSearchChange,
 }: AppHeaderProps) {
   return (
-    <div className="border-b border-gray-800 px-6 py-3 bg-white">
+    <div className="border-b border-gray-200 px-6 py-3 bg-white">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <span>Workspace</span>
@@ -28,14 +28,14 @@ export default function AppHeader({
         <div className="flex-1 max-w-lg relative hidden sm:block">
           <Search
             size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"
           />
 
           <input
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search brands..."
-            className="w-full pl-10 pr-4 py-2 rounded-lg bg-white border border-gray-800 text-slate-900"
+            className="w-full pl-10 pr-4 py-2 rounded-lg bg-white border border-gray-300 text-slate-900"
           />
         </div>
 

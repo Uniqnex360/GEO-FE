@@ -7,7 +7,7 @@ import {
   FiPackage,
   FiActivity,
   // FiBarChart2,
-  // FiFileText,
+  FiFileText,
   // FiTarget,
   // FiTrendingUp,
   // FiPieChart,
@@ -23,12 +23,12 @@ const navItems = [
     label: "Product",
     icon: FiPackage,
   },
-  { to: "/admin/chat", label: "Chat", icon: FiActivity },
-  // {
-  //   to: "/admin/ai-monitoring",
-  //   label: "AI Engine Monitoring",
-  //   icon: FiActivity,
-  // },
+  { to: "/admin/chat", label: "Chat", icon: FiFileText },
+  {
+    to: "/admin/ai-engine",
+    label: "AI Engine",
+    icon: FiActivity,
+  },
   // {
   //   to: "/admin/visibility-analysis",
   //   label: "Visibility Analysis",
@@ -74,7 +74,7 @@ export default function Layout() {
     <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* SIDEBAR */}
       <aside
-        className={`bg-white text-slate-900 flex flex-col transition-all duration-300 border-r border-gray-200 ${
+        className={`bg-white text-slate-900 flex flex-col transition-all duration-300  ${
           collapsed ? "w-20" : "w-64"
         }`}
       >

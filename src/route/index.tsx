@@ -9,6 +9,7 @@ import ProtectedRoute from "./producted_route";
 import BrandRoutes from "./brand";
 import ProductRoutes from "./product_route";
 import AISandboxRoutes from "./AISandbox";
+import AIEngineRoutes from "./AIEngine"
 import ChatRoutes from "./Chat";
 
 export default function AppRouter() {
@@ -37,6 +38,7 @@ export default function AppRouter() {
           {BrandRoutes}
           {ProductRoutes}
           {ChatRoutes}
+          {AIEngineRoutes}
         </Route>
       </Routes>
     </BrowserRouter>
