@@ -2,6 +2,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
+import { Link } from "react-router-dom";
 
 import AppHeader from "../../components/Common/AppHeader";
 import ProductHeader from "./ProductHeader";
@@ -235,12 +236,12 @@ export default function Product() {
       label: "ACTIONS",
       render: (_: unknown, row: Product) => (
         <div className="flex items-center justify-end gap-3">
-          <a
-            href={`/products/${row.id}`}
-            className="text-cyan-400 hover:text-cyan-300 text-sm"
+          <Link
+            to={`/admin/product/${row.id}`}
+            className="text-cyan-400 hover:text-cyan-300 text-sm font-medium"
           >
             Open
-          </a>
+          </Link>
           <button
             onClick={() => handleEdit(row)}
             className="text-yellow-400 hover:text-yellow-300 text-sm"

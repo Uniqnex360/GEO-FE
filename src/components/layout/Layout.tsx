@@ -6,7 +6,7 @@ import {
   FiBriefcase,
   FiPackage,
   FiActivity,
-  // FiBarChart2,
+  FiBarChart2,
   FiFileText,
   // FiTarget,
   // FiTrendingUp,
@@ -29,11 +29,11 @@ const navItems = [
     label: "AI Engine",
     icon: FiActivity,
   },
-  // {
-  //   to: "/admin/visibility-analysis",
-  //   label: "Visibility Analysis",
-  //   icon: FiBarChart2,
-  // },
+  {
+    to: "/admin/citation",
+    label: "Citation",
+    icon: FiBarChart2,
+  },
   // {
   //   to: "/admin/citation-intelligence",
   //   label: "Citation Intelligence",

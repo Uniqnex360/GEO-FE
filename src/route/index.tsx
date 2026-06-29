@@ -11,6 +11,7 @@ import ProductRoutes from "./product_route";
 import AISandboxRoutes from "./AISandbox";
 import AIEngineRoutes from "./AIEngine"
 import ChatRoutes from "./Chat";
+import CitationRoutes from "./Citation";
 
 export default function AppRouter() {
   return (
@@ -39,6 +40,7 @@ export default function AppRouter() {
           {ProductRoutes}
           {ChatRoutes}
           {AIEngineRoutes}
+          {CitationRoutes}
         </Route>
       </Routes>
     </BrowserRouter>

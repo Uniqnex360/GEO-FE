@@ -5,6 +5,7 @@ const ENDPOINTS = {
   PRODUCT_CREATE: `${API_V1}product/create/`,
   PRODUCT_UPDATE: `${API_V1}product/update`,
   PRODUCT_DELETE: `${API_V1}product/delete`,
+  PRODUCT_DETAIL: `${API_V1}product/detail`,
 } as const;
 
 // ==========================================
@@ -108,6 +109,11 @@ class ProductService {
       `${ENDPOINTS.PRODUCT_UPDATE}/${id}/`,
       data,
     );
+    return res.data;
+  }
+
+  async productDetail(id: number) {
+    const res = await api.get(`${ENDPOINTS.PRODUCT_DETAIL}/${id}/`);
     return res.data;
   }
 
