@@ -257,10 +257,10 @@ export default function ProductForm({
       </div>
 
       {/* SECTION 3: DATA DETAILS & LINKS */}
-      {/* <div>
-        <h3 className="text-cyan-400 font-semibold border-b border-gray-700 pb-1 mb-4 text-sm uppercase tracking-wider">
+      {/* <div> */}
+        {/* <h3 className="text-cyan-400 font-semibold border-b border-gray-700 pb-1 mb-4 text-sm uppercase tracking-wider">
           Descriptions & Links
-        </h3>
+        </h3> */}
         <AppFormInput
           label="Product URL"
           name="product_url"
@@ -289,7 +289,7 @@ export default function ProductForm({
             },
           }}
         />
-        <AppFormInput
+        {/* <AppFormInput
           label="Taxonomy Hierarchy"
           name="taxonomy"
           placeholder="Electronics > Audio > Headphones"
