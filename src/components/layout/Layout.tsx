@@ -8,7 +8,7 @@ import {
   FiActivity,
   FiBarChart2,
   FiFileText,
-  // FiTarget,
+  FiTarget,
   // FiTrendingUp,
   // FiPieChart,
   // FiSettings,
@@ -39,11 +39,11 @@ const navItems = [
   //   label: "Citation Intelligence",
   //   icon: FiFileText,
   // },
-  // {
-  //   to: "/admin/competitor-intelligence",
-  //   label: "Competitor Intelligence",
-  //   icon: FiTarget,
-  // },
+  {
+    to: "/admin/competitor",
+    label: "Competitor Intelligence",
+    icon: FiTarget,
+  },
   // {
   //   to: "/admin/product-visibility",
   //   label: "Product Visibility",

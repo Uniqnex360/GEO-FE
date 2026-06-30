@@ -105,7 +105,6 @@ export default function CitationIntelligence() {
     queryKey: ["citationDashboard", id, currentPage],
     // Passing pagination indices safely to your endpoint service runner
     queryFn: () => citationService.getDetail(),
-    enabled: !!id,
     retry: 1,
   });
 

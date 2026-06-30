@@ -12,6 +12,7 @@ import AISandboxRoutes from "./AISandbox";
 import AIEngineRoutes from "./AIEngine"
 import ChatRoutes from "./Chat";
 import CitationRoutes from "./Citation";
+import CompetitorRoutes from "./Competitor";
 
 export default function AppRouter() {
   return (
@@ -41,6 +42,7 @@ export default function AppRouter() {
           {ChatRoutes}
           {AIEngineRoutes}
           {CitationRoutes}
+          {CompetitorRoutes}
         </Route>
       </Routes>
     </BrowserRouter>
