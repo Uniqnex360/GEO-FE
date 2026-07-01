@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 import {
   ChevronDown,
   X,
@@ -8,13 +9,17 @@ import {
   Play,
   Loader2,
   Sparkles,
-  Terminal,
+  Copy, // Added for Copy Button
+  Check, // Added for Copy Success State
 } from "lucide-react";
 import type { ReactNode } from "react";
 
 // Import the package as a default object
 //@ts-ignore
 import wcc from "world-countries-capitals";
+
+import { ExcelDownloadButton } from "../../components/Common/ExcelDownload";
+import { ExcelUploadButton } from "../../components/Common/ExcelUpload";
 
 // Token storage helper
 const tokenStorage = {
@@ -148,6 +153,77 @@ export async function streamApi<T>(
 }
 
 // ==========================================
+// A SIMPLE MARKDOWN PARSER COMPONENT
+// ==========================================
+function SimpleMarkdownRenderer({ text }: { text: string }) {
+  const lines = text.split("\n");
+
+  return (
+    <div className="space-y-2 text-slate-800 text-sm font-sans leading-relaxed">
+      {lines.map((line, i) => {
+        if (line.startsWith("### ")) {
+          return (
+            <h4
+              key={i}
+              className="text-base font-bold text-slate-900 pt-3 pb-1"
+            >
+              {line.replace("### ", "")}
+            </h4>
+          );
+        }
+        if (line.startsWith("## ")) {
+          return (
+            <h3
+              key={i}
+              className="text-lg font-bold text-slate-900 pt-4 pb-1 border-b border-slate-100"
+            >
+              {line.replace("## ", "")}
+            </h3>
+          );
+        }
+        if (line.startsWith("# ")) {
+          return (
+            <h2
+              key={i}
+              className="text-xl font-extrabold text-slate-900 pt-4 pb-2"
+            >
+              {line.replace("# ", "")}
+            </h2>
+          );
+        }
+        if (line.trim().startsWith("* ") || line.trim().startsWith("- ")) {
+          const cleanLine = line.trim().replace(/^[\*\-]\s+/, "");
+          return (
+            <ul key={i} className="list-disc pl-5 my-1">
+              <li>{parseInlineMarkdown(cleanLine)}</li>
+            </ul>
+          );
+        }
+        return line.trim() === "" ? (
+          <div key={i} className="h-2" />
+        ) : (
+          <p key={i}>{parseInlineMarkdown(line)}</p>
+        );
+      })}
+    </div>
+  );
+}
+
+function parseInlineMarkdown(text: string) {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={i} className="font-bold text-slate-900">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return part;
+  });
+}
+
+// ==========================================
 // 1. MULTI-SELECT COMPONENT
 // ==========================================
 interface MultiSelectProps {
@@ -201,7 +277,7 @@ export function AppMultiSelect({
     if (singleSelect) {
       onChange([option]);
       setSearch("");
-      setIsOpen(false);
+      isOpen && setIsOpen(false);
       return;
     }
 
@@ -423,6 +499,7 @@ export default function Chat() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false); // Copy state tracker
 
   const resultEndRef = useRef<HTMLDivElement>(null);
 
@@ -431,6 +508,43 @@ export default function Chat() {
       resultEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [result]);
+
+  // Copy functionality function
+  const handleCopy = async () => {
+    if (!result) return;
+    try {
+      await navigator.clipboard.writeText(result);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // revert icon after 2s
+    } catch (err) {
+      console.error("Failed to copy content: ", err);
+    }
+  };
+
+  // ==========================================
+  // BULK EXCEL UPLOAD HANDLING FUNCTIONS
+  // ==========================================
+  //@ts-ignore
+  const handleUploadSuccess = (response: any) => {
+
+    toast.success("Bulk workspace items imported successfully!");
+
+    // Optional trace logging inside your dynamic feed to confirm action completion
+    setLogs((prev) => [
+      ...prev,
+      {
+        color: "#4f46e5",
+        message: "Spreadsheet context verified. Optimization matrix updated.",
+      },
+    ]);
+  };
+
+  const handleUploadError = (error: any) => {
+    console.error("Excel import failed:", error);
+    toast.error(
+      "Failed to process Excel import. Please check spreadsheet columns.",
+    );
+  };
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -489,19 +603,37 @@ export default function Chat() {
       <div className="flex-1 flex flex-col min-w-0 bg-slate-50 relative h-full">
         {/* Header bar */}
         <header className="flex items-center justify-between border-b border-slate-200 bg-white/80 px-6 py-4 backdrop-blur-md shrink-0">
-          <div className="flex items-center gap-2 text-indigo-600">
-            <Terminal size={18} />
-            <span className="text-xs font-mono tracking-wider uppercase font-bold">
-              Workspace Console
-            </span>
-          </div>
-          <div className="text-right">
+          <div className="text-left">
             <h1 className="text-md font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
               GEO Optimization Lab
             </h1>
             <p className="text-[10px] text-slate-500 font-medium">
               Generative Engine Footprint Sandbox
             </p>
+          </div>
+          <div className="flex items-center gap-1">
+            <ExcelDownloadButton
+              apiUrl={`api/v1/chat/bulk-upload-template/`}
+              filename="chat_template.xlsx"
+              iconSize={22}
+              className="text-slate-600 hover:text-green-600 transition-colors"
+              onSuccess={() =>
+                toast.success("Your download has completed successfully!")
+              }
+              onError={(err) => {
+                console.log("err", err);
+                toast.error("Something went wrong spinning up your file.");
+              }}
+            />
+
+            <ExcelUploadButton
+              apiUrl="api/v1/chat/bulk-upload/" 
+              payloadKey="file"
+              onSuccess={handleUploadSuccess}
+              onError={handleUploadError}
+              iconSize={22}
+              className="text-slate-600 hover:text-indigo-600 transition-colors"
+            />
           </div>
         </header>
 
@@ -567,13 +699,39 @@ export default function Chat() {
                 <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">
                   AI Strategy Playbook Response
                 </span>
-                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[10px] font-mono border border-indigo-100">
-                  Markdown Render
-                </span>
+
+                {/* Updated Action Controls with Copy Button Container */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 rounded-lg shadow-sm cursor-pointer transition-all active:scale-95"
+                    title="Copy response payload"
+                  >
+                    {copied ? (
+                      <>
+                        <Check size={13} className="text-emerald-600" />
+                        <span className="text-emerald-600 text-[11px]">
+                          Copied!
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={13} />
+                        <span className="text-[11px]">Copy Option</span>
+                      </>
+                    )}
+                  </button>
+                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[10px] font-mono border border-indigo-100">
+                    Live Engine Stream
+                  </span>
+                </div>
               </div>
-              <pre className="text-slate-800 font-sans text-sm leading-relaxed whitespace-pre-wrap selection:bg-indigo-200">
-                {result}
-              </pre>
+
+              {/* Clean Markdown rendering block */}
+              <div className="selection:bg-indigo-200">
+                <SimpleMarkdownRenderer text={result} />
+              </div>
               <div ref={resultEndRef} />
             </article>
           )}
@@ -707,7 +865,7 @@ export default function Chat() {
             </h3>
             <div className="space-y-1.5">
               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-                Target Regions
+                Target Markets
               </label>
               <AppMultiSelect
                 options={countryOptions}
