@@ -487,10 +487,17 @@ export default function Chat() {
 
   // Core Sidebar Fields
   const [productName, setProductName] = useState("");
+  const [website, setWebsite] = useState(""); // Mandatory Website field
   const [productUrl, setProductUrl] = useState("");
   const [selectedCountries, setSelectedCountries] = useState<string[]>([
     "United States of America",
   ]);
+
+  // Optional Product Identifiers
+  const [sku, setSku] = useState("");
+  const [mpn, setMpn] = useState("");
+  const [ean, setEan] = useState("");
+  const [upc, setUpc] = useState("");
 
   // Main Workspace Input
   const [extraContext, setExtraContext] = useState("");
@@ -526,7 +533,6 @@ export default function Chat() {
   // ==========================================
   //@ts-ignore
   const handleUploadSuccess = (response: any) => {
-
     toast.success("Bulk workspace items imported successfully!");
 
     // Optional trace logging inside your dynamic feed to confirm action completion
@@ -548,7 +554,13 @@ export default function Chat() {
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!productName.trim() && !productUrl.trim()) || loading) return;
+    // Validate mandatory fields: website must exist, and either productName or productUrl must be provided
+    if (
+      !website.trim() ||
+      (!productName.trim() && !productUrl.trim()) ||
+      loading
+    )
+      return;
 
     setLogs([]);
     setResult("");
@@ -559,7 +571,12 @@ export default function Chat() {
         "api/v1/chat/init_llm_analyzes/",
         {
           product_name: productName.trim() || null,
+          website: website.trim() || null,
           product_url: productUrl.trim() || null,
+          sku: sku.trim() || null,
+          mpn: mpn.trim() || null,
+          ean: ean.trim() || null,
+          upc: upc.trim() || null,
           extra_context: extraContext,
           countries: selectedCountries,
         },
@@ -627,7 +644,7 @@ export default function Chat() {
             />
 
             <ExcelUploadButton
-              apiUrl="api/v1/chat/bulk-upload/" 
+              apiUrl="api/v1/chat/bulk-upload/"
               payloadKey="file"
               onSuccess={handleUploadSuccess}
               onError={handleUploadError}
@@ -760,14 +777,18 @@ export default function Chat() {
 
               <div className="flex items-center justify-between pt-1">
                 <p className="text-[11px] text-slate-400 font-mono font-medium">
-                  {!productName.trim() && !productUrl.trim()
-                    ? "⚠️ Enter product identifier or URL to unlock engine run."
-                    : "⚡ Ready for strategy execution."}
+                  {!website.trim()
+                    ? "⚠️ Website address is required to proceed."
+                    : !productName.trim() && !productUrl.trim()
+                      ? "⚠️ Enter product identifier or URL to unlock engine run."
+                      : "⚡ Ready for strategy execution."}
                 </p>
                 <button
                   type="submit"
                   disabled={
-                    loading || (!productName.trim() && !productUrl.trim())
+                    loading ||
+                    !website.trim() ||
+                    (!productName.trim() && !productUrl.trim())
                   }
                   className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-40 disabled:hover:bg-indigo-600 disabled:scale-100 cursor-pointer"
                 >
@@ -820,6 +841,25 @@ export default function Chat() {
               />
             </div>
 
+            {/* Mandatory Input: Website */}
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
+                Website <span className="text-red-500 font-bold">*</span>
+              </label>
+              <div className="relative flex items-center">
+                <Globe size={13} className="absolute left-3 text-slate-400" />
+                <input
+                  type="url"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://example.com"
+                  disabled={loading}
+                  required
+                  className="w-full h-[38px] bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all disabled:opacity-50"
+                />
+              </div>
+            </div>
+
             {/* Split Divider Line */}
             <div className="relative flex py-1 items-center text-xs text-slate-400 font-mono">
               <div className="flex-grow border-t border-slate-200"></div>
@@ -855,6 +895,67 @@ export default function Chat() {
                 crawls and parses structural profile properties via this asset
                 address.
               </p>
+            </div>
+          </div>
+
+          {/* Optional Product Identifiers Grid Section */}
+          <div className="space-y-3">
+            <h3 className="text-[11px] font-bold text-indigo-600 uppercase tracking-widest border-b border-slate-100 pb-1">
+              Identifiers (Optional)
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                  SKU
+                </label>
+                <input
+                  type="text"
+                  value={sku}
+                  onChange={(e) => setSku(e.target.value)}
+                  placeholder="e.g. SKU-123"
+                  disabled={loading}
+                  className="w-full h-[38px] bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all disabled:opacity-50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                  MPN
+                </label>
+                <input
+                  type="text"
+                  value={mpn}
+                  onChange={(e) => setMpn(e.target.value)}
+                  placeholder="e.g. MPN-456"
+                  disabled={loading}
+                  className="w-full h-[38px] bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all disabled:opacity-50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                  EAN
+                </label>
+                <input
+                  type="text"
+                  value={ean}
+                  onChange={(e) => setEan(e.target.value)}
+                  placeholder="e.g. EAN-789"
+                  disabled={loading}
+                  className="w-full h-[38px] bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all disabled:opacity-50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                  UPC
+                </label>
+                <input
+                  type="text"
+                  value={upc}
+                  onChange={(e) => setUpc(e.target.value)}
+                  placeholder="e.g. UPC-012"
+                  disabled={loading}
+                  className="w-full h-[38px] bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all disabled:opacity-50"
+                />
+              </div>
             </div>
           </div>
 
