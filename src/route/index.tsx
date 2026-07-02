@@ -9,10 +9,11 @@ import ProtectedRoute from "./producted_route";
 import BrandRoutes from "./brand";
 import ProductRoutes from "./product_route";
 import AISandboxRoutes from "./AISandbox";
-import AIEngineRoutes from "./AIEngine"
+import AIEngineRoutes from "./AIEngine";
 import ChatRoutes from "./Chat";
 import CitationRoutes from "./Citation";
 import CompetitorRoutes from "./Competitor";
+import ProjectRoutes from "./Project";
 
 export default function AppRouter() {
   return (
@@ -37,6 +38,7 @@ export default function AppRouter() {
           <Route index element={<Dashboard />} />
           <Route path="users" element={<User />} />
           {/* routes */}
+          {ProjectRoutes}
           {BrandRoutes}
           {ProductRoutes}
           {ChatRoutes}
