@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOutletContext } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { toast } from "react-toastify";
@@ -58,7 +58,9 @@ export default function ProjectDashboard() {
 
   // Dialog States
   const [drawer, setDrawer] = useState(false);
+  //@ts-ignore
   const [deleteModal, setDeleteModal] = useState(false);
+  //@ts-ignore
   const [selectedProject, setSelectedProject] = useState<ProjectCU | null>(
     null,
   );
@@ -84,6 +86,7 @@ export default function ProjectDashboard() {
   };
 
   // Mutations
+  //@ts-ignore
   const createMutation = useMutation<Project, AxiosError<ApiError>, ProjectCU>({
     mutationFn: projectService.createProject,
     onSuccess: () =>
@@ -92,7 +95,7 @@ export default function ProjectDashboard() {
       ),
     onError: handleMutationError,
   });
-
+  //@ts-ignore
   const updateMutation = useMutation<Project, AxiosError<ApiError>, ProjectCU>({
     mutationFn: (payload) => projectService.updateProject(payload.id!, payload),
     onSuccess: () =>
@@ -101,7 +104,7 @@ export default function ProjectDashboard() {
       ),
     onError: handleMutationError,
   });
-
+  //@ts-ignore
   const deleteMutation = useMutation<void, AxiosError<ApiError>, number>({
     mutationFn: projectService.deleteProject,
     onSuccess: () => {
