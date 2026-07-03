@@ -5,7 +5,7 @@ const ENDPOINTS = {
   BRAND_CREATE: `${API_V1}brand/create/`,
   BRAND_UPDATE: `${API_V1}brand/update`,
   BRAND_DELETE: `${API_V1}brand/delete`,
-  BRAND_META_LIST : `${API_V1}brand/meta-list/`,
+  BRAND_META_LIST: `${API_V1}brand/meta-list/`,
 } as const;
 
 export interface Brand {
@@ -17,7 +17,11 @@ export interface Brand {
   competitor: string;
 }
 
-export type BrandCU = Omit<Brand, "id">;
+// Enriched to accept tenant_id in request bodies dynamically
+export type BrandCU = Omit<Brand, "id"> & {
+  id?: string; // Included optionally for update handlers mapping data inline
+  tenant_id?: number;
+};
 
 export type BrandList = {
   data: Brand[];
@@ -29,18 +33,21 @@ export type BrandList = {
 };
 
 export type AppMetaList = {
-  id: number,
-  value: string,
-}
+  id: number;
+  value: string;
+};
 
 class BrandService {
-  async getBrands(): Promise<BrandList> {
-    const res = await api.get<BrandList>(ENDPOINTS.BRAND_LIST);
+  // Modified to take tenant_id (and potential pagination/filters) as a query parameter
+  async getBrands(params?: { tenant_id?: number }): Promise<BrandList> {
+    const res = await api.get<BrandList>(ENDPOINTS.BRAND_LIST, { params });
     return res.data;
   }
 
-  async getMetaBrandList(): Promise<AppMetaList[]> {
-    const res = await api.get<AppMetaList[]>(ENDPOINTS.BRAND_META_LIST);
+  async getMetaBrandList(tenant_id: number | null): Promise<AppMetaList[]> {
+    const res = await api.get<AppMetaList[]>(ENDPOINTS.BRAND_META_LIST, {
+      params: { tenant_id },
+    });
     return res.data;
   }
 

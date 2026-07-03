@@ -4,13 +4,20 @@ const ENDPOINTS = {
   LIST_API: `${API_V1}tenant/list/`,
   CREATE_API: `${API_V1}tenant/create/`,
   UPDATE_API: (id: number | string) => `${API_V1}tenant/update/${id}/`,
-  DELETE_API: (id: number | string) => `${API_V1}tenant/delete/${id}/`,
+  DELETE_API: (id: number | string) => `${API_V1}tenant/toggle-status/${id}/`,
 } as const;
 
+// Define an interface for the query parameters
+export interface GetProjectsParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
 class ProjectService {
-  async getList(): Promise<any> {
-    const res = await api.get(ENDPOINTS.LIST_API);
-    // Explicitly handling both raw structures: { data: [...] } or direct array responses
+  // FIXED: Added optional params argument and passed it directly to axios config
+  async getList(params?: GetProjectsParams): Promise<any> {
+    const res = await api.get(ENDPOINTS.LIST_API, { params });
     return res.data;
   }
 

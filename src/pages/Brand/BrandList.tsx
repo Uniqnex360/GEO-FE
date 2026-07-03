@@ -2,6 +2,9 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
+import { useSelector } from "react-redux";
+
+import { selectGlobalProjectId } from "../../store/projectSlice";
 
 import AppTable from "../../components/Common/AppTable";
 import AppDrawer from "../../components/Common/AppDrawer";
@@ -29,9 +32,12 @@ export default function Brand() {
   const [isUpdate, setIsUpdate] = useState(false);
   const [deleteId, setDeleteId] = useState("");
 
+  // --- Redux Project State ---
+  const reduxProjectId = useSelector(selectGlobalProjectId);
+
   const invalidateBrands = () =>
     queryClient.invalidateQueries({
-      queryKey: ["brands"],
+      queryKey: ["brands", reduxProjectId], // Refreshes only the active tenant cache matrix
     });
 
   const getErrorMessage = (error: AxiosError<ApiError>) => {
@@ -42,25 +48,26 @@ export default function Brand() {
 
   const handleMutationError = (error: AxiosError<ApiError>) => {
     console.log(error);
-
     toast.error(getErrorMessage(error));
   };
 
   const handleMutationSuccess = (message: string, close?: () => void) => {
     toast.success(message);
-
     invalidateBrands();
-
     close?.();
   };
 
   // =========================
-  // Query
+  // Query (List View)
   // =========================
-
   const { data, isLoading } = useQuery({
-    queryKey: ["brands"],
-    queryFn: brandService.getBrands,
+    // Adding reduxProjectId forces a re-fetch automatically whenever the project is swapped
+    queryKey: ["brands", reduxProjectId],
+    queryFn: () =>
+      brandService.getBrands({
+        tenant_id: reduxProjectId ? Number(reduxProjectId) : undefined,
+      }),
+    enabled: !!reduxProjectId, // Safely stalls execution if no project context is active
   });
 
   const brands: Brand[] = data?.data ?? [];
@@ -68,9 +75,12 @@ export default function Brand() {
   // =========================
   // Create
   // =========================
-
   const createMutation = useMutation<Brand, AxiosError<ApiError>, BrandCU>({
-    mutationFn: brandService.createBrand,
+    mutationFn: (formData) =>
+      brandService.createBrand({
+        ...formData,
+        tenant_id: Number(reduxProjectId), // Dynamic injection into body payload
+      }),
 
     onSuccess: () =>
       handleMutationSuccess("Brand created", () => setDrawer(false)),
@@ -84,9 +94,12 @@ export default function Brand() {
   // =========================
   // Update
   // =========================
-
   const updateMutation = useMutation<Brand, AxiosError<ApiError>, BrandCU>({
-    mutationFn: (data) => brandService.updateBrand(data.id!, data),
+    mutationFn: (formData) =>
+      brandService.updateBrand(formData.id!, {
+        ...formData,
+        tenant_id: Number(reduxProjectId), // Dynamic injection into body payload
+      }),
 
     onSuccess: () =>
       handleMutationSuccess("Brand updated", () => setDrawer(false)),
@@ -100,7 +113,6 @@ export default function Brand() {
   // =========================
   // Delete
   // =========================
-
   const deleteMutation = useMutation<void, AxiosError<ApiError>, string>({
     mutationFn: brandService.deleteBrand,
 
@@ -111,23 +123,28 @@ export default function Brand() {
   });
 
   const handleSubmit = (data: BrandCU) => {
-    const mutation = isUpdate ? updateMutation : createMutation;
+    if (!reduxProjectId) {
+      toast.error("Active project context missing.");
+      return;
+    }
 
+    const mutation = isUpdate ? updateMutation : createMutation;
     mutation.mutate(data);
   };
 
   const handleEdit = (brand: BrandCU) => {
-    console.log("brand", brand);
     setSelectedBrand(brand);
     setIsUpdate(true);
     setDrawer(true);
   };
 
+  // =========================
+  // Table Columns Definition
+  // =========================
   const columns = [
     {
       key: "name",
       label: "BRAND",
-
       render: (value: string, row: Brand) => {
         const brandName = value ?? "Unknown Brand";
         const domain = row?.domain ?? "";
@@ -147,7 +164,6 @@ export default function Brand() {
 
             <div className="flex flex-col">
               <span className="font-semibold text-slate-900">{brandName}</span>
-
               {domain && (
                 <span className="text-xs text-gray-400">{domain}</span>
               )}
@@ -156,35 +172,29 @@ export default function Brand() {
         );
       },
     },
-
     {
       key: "industry",
       label: "INDUSTRY",
-
       render: (value: string) => (
         <span className="text-slate-900">{value ?? "-"}</span>
       ),
     },
-
     {
       key: "country",
       label: "COUNTRY",
-
       render: (value: string) => (
         <span className="text-slate-900">{value ?? "-"}</span>
       ),
     },
-
     {
       key: "visibility",
       label: "VISIBILITY",
-
       render: (value: any) => {
         const visibilityScore = typeof value === "number" ? value : 0;
 
         return (
           <div className="flex items-center gap-4 min-w-[120px]">
-            <div className="w-full  rounded-full h-1.5">
+            <div className="w-full rounded-full h-1.5">
               <div
                 className="bg-cyan-400 h-1.5 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.4)]"
                 style={{
@@ -192,7 +202,6 @@ export default function Brand() {
                 }}
               />
             </div>
-
             <span className="text-slate-900 font-medium w-6 text-right">
               {visibilityScore}
             </span>
@@ -200,31 +209,25 @@ export default function Brand() {
         );
       },
     },
-
     {
       key: "mention_rate",
       label: "MENTION RATE",
-
       render: (value: any) => (
         <span className="text-gray-300 font-medium">
           {typeof value === "number" ? `${value}%` : "-"}
         </span>
       ),
     },
-
     {
       key: "delta",
       label: "Δ",
-
       render: (value: any) => {
         if (value === undefined || value === null) {
           return <span className="text-gray-500">-</span>;
         }
 
         const numValue = parseFloat(value);
-
         const isNegative = numValue < 0;
-
         const formattedValue = numValue > 0 ? `+${numValue}%` : `${numValue}%`;
 
         return (
@@ -238,11 +241,9 @@ export default function Brand() {
         );
       },
     },
-
     {
       key: "actions",
       label: "ACTIONS",
-
       render: (_: unknown, row: Brand) => (
         <div className="flex items-center justify-end gap-3">
           <a
@@ -251,14 +252,12 @@ export default function Brand() {
           >
             Open
           </a>
-
           <button
             onClick={() => handleEdit(row)}
             className="text-yellow-400 hover:text-yellow-300 text-sm"
           >
             Edit
           </button>
-
           <button
             onClick={() => {
               setDeleteId(row.id);
@@ -272,6 +271,15 @@ export default function Brand() {
       ),
     },
   ];
+
+  // --- Unselected Context Fallback ---
+  if (!reduxProjectId) {
+    return (
+      <div className="p-8 text-slate-500 font-medium text-center">
+        Please select a project to view corresponding brand analytics.
+      </div>
+    );
+  }
 
   return (
     <>

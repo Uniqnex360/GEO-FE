@@ -18,7 +18,7 @@ export default function ProductForm({
   isUpdate,
   loading,
   onSubmit,
-  brandOption
+  brandOption,
 }: Props) {
   const {
     register,
@@ -121,52 +121,60 @@ export default function ProductForm({
     >
       {/* SECTION 1: CORE RELATION & INFO */}
       <div>
-        <h3 className="text-cyan-400 font-semibold border-b border-gray-700 pb-1 mb-4 text-sm uppercase tracking-wider">
-          Core Information
-        </h3>
         {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> */}
-          <AppFormInput
-            label="Product Name"
-            name="name"
-            placeholder="e.g. Northwave Studio Pro"
-            register={register}
-            rules={{ required: "Product name is required" }}
-            error={errors.name}
-            formState={formState}
-          />
-          {/* <AppFormInput
-            label="Brand ID"
-            name="brand_id"
-            type="number"
-            placeholder="e.g. 102"
-            register={register}
-            rules={{ required: "Brand ID is required", valueAsNumber: true }}
-            error={errors.brand_id}
-            formState={formState}
-          /> */}
-        {/* </div> */}
+        <AppFormInput
+          label="Product Title"
+          name="name"
+          placeholder="e.g. Northwave Studio Pro"
+          register={register}
+          rules={{ required: "Product name is required" }}
+          error={errors.name}
+          formState={formState}
+        />
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-          <AppFormInput
-            label="Brand ID"
-            name="brand_id"
-            type="select"
-            placeholder="Samsung"
-            register={register}
-            rules={{ required: "Brand ID is required", valueAsNumber: true }}
-            error={errors.brand_id}
-            formState={formState}
-            options={brandOption}
-          />
-          <AppFormInput
-            label="Category"
-            name="category"
-            placeholder="Headphones"
-            register={register}
-            error={errors.category}
-            formState={formState}
-          />
-          {/* <AppFormInput
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <AppFormInput
+          label="SKU"
+          name="sku"
+          rules={{ required: "Product SKU is required" }}
+          placeholder="NW-SP-01"
+          register={register}
+          error={errors.sku}
+          formState={formState}
+        />
+        <AppFormInput
+          label="MPN"
+          name="mpn"
+          rules={{ required: "Product MPN is required" }}
+          placeholder="NWSP2025"
+          register={register}
+          error={errors.mpn}
+          formState={formState}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+        <AppFormInput
+          label="Brand ID"
+          name="brand_id"
+          type="select"
+          placeholder="Samsung"
+          register={register}
+          rules={{ required: "Brand ID is required", valueAsNumber: true }}
+          error={errors.brand_id}
+          formState={formState}
+          options={brandOption}
+        />
+        <AppFormInput
+          label="Category"
+          name="category"
+          placeholder="Headphones"
+          register={register}
+          error={errors.category}
+          formState={formState}
+        />
+        {/* <AppFormInput
             label="Brand Name (Optional)"
             name="brand_name"
             placeholder="e.g. Northwave Audio"
@@ -174,7 +182,7 @@ export default function ProductForm({
             error={errors.brand_name}
             formState={formState}
           /> */}
-          {/* <AppFormInput
+        {/* <AppFormInput
             label="Manufacturer"
             name="manufacturer"
             placeholder="Manufacturer name"
@@ -182,114 +190,44 @@ export default function ProductForm({
             error={errors.manufacturer}
             formState={formState}
           /> */}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-          {/* <AppFormInput
-            label="Model Number"
-            name="model_number"
-            placeholder="MN-900"
-            register={register}
-            error={errors.model_number}
-            formState={formState}
-          /> */}
-          {/* <AppFormInput
-            label="Product Type"
-            name="product_type"
-            placeholder="Premium Electronics"
-            register={register}
-            error={errors.product_type}
-            formState={formState}
-          /> */}
-          
-        </div>
       </div>
 
       {/* SECTION 2: IDENTIFIERS */}
-      <div>
-        <h3 className="text-cyan-400 font-semibold border-b border-gray-700 pb-1 mb-4 text-sm uppercase tracking-wider">
-          Product Codes & Identifiers
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <AppFormInput
-            label="SKU"
-            name="sku"
-            placeholder="NW-SP-01"
-            register={register}
-            error={errors.sku}
-            formState={formState}
-          />
-          <AppFormInput
-            label="MPN"
-            name="mpn"
-            placeholder="NWSP2025"
-            register={register}
-            error={errors.mpn}
-            formState={formState}
-          />
-          <AppFormInput
-            label="UPC"
-            name="upc"
-            placeholder="0850001234567"
-            register={register}
-            error={errors.upc}
-            formState={formState}
-          />
-        </div>
-        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-          <AppFormInput
-            label="GTIN"
-            name="gtin"
-            placeholder="Global Trade Item Number"
-            register={register}
-            error={errors.gtin}
-            formState={formState}
-          />
-          <AppFormInput
-            label="EAN"
-            name="ean"
-            placeholder="European Article Number"
-            register={register}
-            error={errors.ean}
-            formState={formState}
-          />
-        </div> */}
-      </div>
 
       {/* SECTION 3: DATA DETAILS & LINKS */}
       {/* <div> */}
-        {/* <h3 className="text-cyan-400 font-semibold border-b border-gray-700 pb-1 mb-4 text-sm uppercase tracking-wider">
+      {/* <h3 className="text-cyan-400 font-semibold border-b border-gray-700 pb-1 mb-4 text-sm uppercase tracking-wider">
           Descriptions & Links
         </h3> */}
-        <AppFormInput
-          label="Product URL"
-          name="product_url"
-          placeholder="https://example.com/product"
-          register={register}
-          error={errors.product_url}
-          formState={formState}
-          rules={{
-            validate: (value) => {
-              // optional field → empty is valid
+      <AppFormInput
+        label="Product URL"
+        name="product_url"
+        placeholder="https://example.com/product"
+        register={register}
+        error={errors.product_url}
+        formState={formState}
+        rules={{
+          validate: (value) => {
+            // optional field → empty is valid
+            //@ts-ignore
+            if (!value?.trim()) return true;
+
+            try {
               //@ts-ignore
-              if (!value?.trim()) return true;
+              const url = new URL(value);
 
-              try {
-                //@ts-ignore
-                const url = new URL(value);
-
-                // allow only http/https
-                return (
-                  ["http:", "https:"].includes(url.protocol) ||
-                  "Please enter a valid URL"
-                );
-              } catch {
-                return "Please enter a valid URL";
-              }
-            },
-          }}
-        />
-        {/* <AppFormInput
+              // allow only http/https
+              return (
+                ["http:", "https:"].includes(url.protocol) ||
+                "Please enter a valid URL"
+              );
+            } catch {
+              return "Please enter a valid URL";
+            }
+          },
+        }}
+      />
+      {/* <AppFormInput
           label="Taxonomy Hierarchy"
           name="taxonomy"
           placeholder="Electronics > Audio > Headphones"

@@ -23,7 +23,7 @@ export interface ProductFAQ {
 }
 
 export interface Product {
-  id: number; // Linked directly to Pydantic 'id: int'
+  id: number;
   brand_id: number;
   name: string;
   brand_name?: string | null;
@@ -66,9 +66,10 @@ export interface Product {
   visibility?: number;
   rank?: number;
   trend?: number;
+
+  tenant_id?: number | string;
 }
 
-// Clean mapping types for Data Operations
 export type ProductCU = Omit<Product, "id"> & { id?: number };
 
 export interface ProductList {
@@ -77,7 +78,16 @@ export interface ProductList {
     page: number;
     limit: number;
     total: number;
+    total_pages: number; // Added to match template formatting structure
   };
+}
+
+// Interface for dynamic parameters passing through components
+export interface GetProductsParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  tenant_id?: number;
 }
 
 // ==========================================
@@ -86,10 +96,13 @@ export interface ProductList {
 
 class ProductService {
   /**
-   * Fetches a paginated sequence of product schemas
+   * Fetches a paginated sequence of product schemas filtered by search criteria and tenant mapping
    */
-  async getProducts(): Promise<ProductList> {
-    const res = await api.get<ProductList>(ENDPOINTS.PRODUCT_LIST);
+  async getProducts(params?: GetProductsParams): Promise<ProductList> {
+    console.log("parmas", params)
+    const res = await api.get<ProductList>(ENDPOINTS.PRODUCT_LIST, {
+      params, // Axios binds these directly to the URL string context automatically (?page=X&tenant_id=Y)
+    });
     return res.data;
   }
 

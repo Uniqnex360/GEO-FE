@@ -1,39 +1,97 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams, Link } from "react-router-dom";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
+import { useSelector } from "react-redux";
 import type { AxiosError } from "axios";
-import { Link } from "react-router-dom";
+import { Plus } from "lucide-react";
 
-import AppHeader from "../../components/Common/AppHeader";
-import ProductHeader from "./ProductHeader";
 import AppTable from "../../components/Common/AppTable";
-import AppDrawer from "../../components/Common/AppDrawer";
+import { AppSearch } from "../../components/Common/AppSearch";
+import { AppPagination } from "../../components/Common/AppPagination";
+import AppModal from "../../components/Common/AppModel";
 
 import ProductForm from "./ProductForm";
 import ProductDelete from "./ProductDelete";
 import { brandService, type AppMetaList } from "../../api/brand";
+import { selectGlobalProjectId } from "../../store/projectSlice"; // Adjust path if necessary
 
 // Import your newly refactored schema and client layer
 import {
   productService,
-  type Product,
+  type Product as ProductType,
   type ProductCU,
 } from "../../api/product";
 
 type ApiError = {
   message?: string;
+  detail?: string;
 };
 
 export default function Product() {
   const queryClient = useQueryClient();
 
-  const [drawer, setDrawer] = useState(false);
+  // --- Redux State (Tenant ID Alignment) ---
+  const reduxProjectId = useSelector(selectGlobalProjectId);
+
+  // --- UI Component States ---
+  const [drawer, setDrawer] = useState(false); // Keeps naming but maps to <AppModal>
   const [deleteModal, setDeleteModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductCU | null>(
     null,
   );
   const [isUpdate, setIsUpdate] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+
+  // --- URL Param Synchronization ---
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Number(searchParams.get("page")) || 1;
+  const searchTerm = searchParams.get("search") || "";
+  const limit = 24;
+
+  // --- Local Search Input Debouncing State ---
+  const [localSearch, setLocalSearch] = useState(searchTerm);
+
+  // --- Synced State Modifiers ---
+  const setPage = (newPage: number) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("page", String(newPage));
+    setSearchParams(params);
+  };
+
+  const setSearchTerm = (newSearch: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (newSearch) {
+      params.set("search", newSearch);
+    } else {
+      params.delete("search");
+    }
+    params.set("page", "1"); // Force page reset on search filters
+    setSearchParams(params);
+  };
+
+  const handleSearchChange = (val: string) => {
+    setLocalSearch(val);
+  };
+
+  // Debounce loop execution
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(localSearch);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [localSearch]);
+
+  // Handle browser history navigation changes
+  useEffect(() => {
+    setLocalSearch(searchTerm);
+  }, [searchTerm]);
 
   const invalidateProducts = () =>
     queryClient.invalidateQueries({
@@ -42,7 +100,6 @@ export default function Product() {
 
   const getErrorMessage = (error: AxiosError<ApiError>) => {
     return (
-      //@ts-ignore
       error.response?.data?.detail ||
       error.response?.data?.message ||
       error.message ||
@@ -61,40 +118,66 @@ export default function Product() {
     close?.();
   };
 
-  // =========================
-  // React Query Fetch
-  // =========================
-  const { data, isLoading } = useQuery({
-    queryKey: ["products"],
-    queryFn: productService.getProducts,
+  // ==========================================
+  // React Query Fetch (Listens to Tenant Redux Changes)
+  // ==========================================
+  const { data, isPending, isError } = useQuery({
+    // Adding reduxProjectId here forces an immediate query auto-refresh whenever it mutates
+    queryKey: ["products", reduxProjectId, page, searchTerm],
+    queryFn: () =>
+      productService.getProducts({
+        page,
+        limit,
+        search: searchTerm || undefined,
+        tenant_id: reduxProjectId ? Number(reduxProjectId) : undefined, // Passing Tenant ID cleanly
+      }),
+    enabled: !!reduxProjectId, // Safely avoids executing queries if no tenant context is active
+    placeholderData: keepPreviousData,
   });
 
-  const products: Product[] = data?.data ?? [];
+  // Supporting backend responses matching paginated structures
+  const products: ProductType[] = data?.data ?? [];
+  const paginationData = data?.pagination;
 
-  // =========================
+  // ==========================================
   // Meta API for Brands
-  // =========================
+  // ==========================================
   const { data: brandChoiceData } = useQuery({
-    queryKey: ["brandChoice"],
-    queryFn: brandService.getMetaBrandList,
+    queryKey: ["brandChoice", reduxProjectId],
+    queryFn: () => brandService.getMetaBrandList(reduxProjectId), // 👈 Wrapped cleanly to block context leaking
+    enabled: !!reduxProjectId,
   });
 
   const brandChoice: AppMetaList[] = brandChoiceData ?? [];
-  console.log("brandChoice", brandChoice);
 
-  // =========================
+  // ==========================================
   // Mutations
-  // =========================
-  const createMutation = useMutation<Product, AxiosError<ApiError>, ProductCU>({
-    mutationFn: productService.createProduct,
+  // ==========================================
+  const createMutation = useMutation<
+    ProductType,
+    AxiosError<ApiError>,
+    ProductCU
+  >({
+    mutationFn: (formData) =>
+      productService.createProduct({
+        ...formData,
+        tenant_id: Number(reduxProjectId),
+      }),
     onSuccess: () =>
       handleMutationSuccess("Product created", () => setDrawer(false)),
     onError: handleMutationError,
   });
 
-  const updateMutation = useMutation<Product, AxiosError<ApiError>, ProductCU>({
+  const updateMutation = useMutation<
+    ProductType,
+    AxiosError<ApiError>,
+    ProductCU
+  >({
     mutationFn: (formData) =>
-      productService.updateProduct(formData.id!, formData),
+      productService.updateProduct(formData.id!, {
+        ...formData,
+        tenant_id: Number(reduxProjectId),
+      }),
     onSuccess: () =>
       handleMutationSuccess("Product updated", () => setDrawer(false)),
     onError: handleMutationError,
@@ -112,15 +195,15 @@ export default function Product() {
     mutation.mutate(formData);
   };
 
-  const handleEdit = (product: Product) => {
+  const handleEdit = (product: ProductType) => {
     setSelectedProduct(product);
     setIsUpdate(true);
     setDrawer(true);
   };
 
-  // =========================
+  // ==========================================
   // Table Columns Definition
-  // =========================
+  // ==========================================
   const columns = [
     {
       key: "name",
@@ -132,22 +215,12 @@ export default function Product() {
       ),
     },
     {
-      key: "brand_name",
-      label: "BRAND",
-      render: (value: string) => (
-        <span className="text-slate-900 font-medium">
-          {value ?? "Unknown Brand"}
-        </span>
-      ),
-    },
-    {
       key: "sku",
-      label: "SKU / MPN / UPC",
-      render: (_: string, row: Product) => {
+      label: "SKU / MPN",
+      render: (_: string, row: ProductType) => {
         const sku = row.sku ?? "-";
         const mpn = row.mpn ?? "";
-        const upc = row.upc ?? "";
-        const combinedSub = [mpn, upc].filter(Boolean).join(" · ");
+        const combinedSub = [mpn].filter(Boolean).join(" · ");
 
         return (
           <div className="flex flex-col text-xs text-slate-900 font-mono">
@@ -158,83 +231,35 @@ export default function Product() {
       },
     },
     {
-      key: "category",
-      label: "CATEGORY",
+      key: "brand_name",
+      label: "BRAND",
       render: (value: string) => (
-        <span className="text-slate-900 font-medium">{value ?? "-"}</span>
+        <span className="text-slate-900 font-medium">
+          {value ?? "Unknown Brand"}
+        </span>
       ),
     },
-    // {
-    //   key: "visibility",
-    //   label: "VISIBILITY",
-    //   render: (value: any) => {
-    //     const score = typeof value === "number" ? value : 0;
-    //     return (
-    //       <div className="flex items-center gap-4 min-w-[140px]">
-    //         <div className="w-full bg-gray-800 rounded-full h-1.5">
-    //           <div
-    //             className="bg-cyan-400 h-1.5 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.4)]"
-    //             style={{ width: `${Math.min(Math.max(score, 0), 100)}%` }}
-    //           />
-    //         </div>
-    //         <span className="text-gray-300 font-medium w-6 text-right">
-    //           {score}
-    //         </span>
-    //       </div>
-    //     );
-    //   },
-    // },
-    // {
-    //   key: "rank",
-    //   label: "RANK",
-    //   render: (value: any) => (
-    //     <span className="text-gray-300 font-semibold">
-    //       {value !== undefined && value !== null ? `#${value}` : "-"}
-    //     </span>
-    //   ),
-    // },
-    // {
-    //   key: "trend",
-    //   label: "TREND",
-    //   render: (value: any) => {
-    //     if (value === undefined || value === null)
-    //       return <span className="text-gray-500">-</span>;
-    //     const numericTrend = parseFloat(value);
-    //     const isNegative = numericTrend < 0;
-    //     const formattedTrend =
-    //       numericTrend > 0 ? `+${numericTrend}%` : `${numericTrend}%`;
 
-    //     return (
-    //       <div className="flex items-center gap-3">
-    //         <span
-    //           className={`font-semibold text-sm ${isNegative ? "text-red-500" : "text-emerald-400"}`}
-    //         >
-    //           {formattedTrend}
-    //         </span>
-    //         <svg className="w-12 h-4 overflow-visible" viewBox="0 0 50 20">
-    //           <path
-    //             d={isNegative ? "M0,5 Q25,18 50,15" : "M0,15 Q25,12 50,5"}
-    //             fill="none"
-    //             stroke={isNegative ? "#ef4444" : "#34d399"}
-    //             strokeWidth="2"
-    //           />
-    //         </svg>
-    //       </div>
-    //     );
-    //   },
+    // {
+    //   key: "analytics.avg_share_of_voice",
+    //   label: "Share of Voice",
     // },
-    {
-      key: "analytics.avg_share_of_voice",
-      label: "Share of Voice",
-    },
     {
       key: "analytics.visibility_rate",
       label: "Visibility",
     },
     {
+      key: "no_of_faqs",
+      label: "FAQ",
+    },
+    {
+      key: "no_of_reviews",
+      label: "Reviews",
+    },
+    {
       key: "actions",
       label: "ACTIONS",
-      render: (_: unknown, row: Product) => (
+      render: (_: unknown, row: ProductType) => (
         <div className="flex items-center justify-end gap-3">
           <Link
             to={`/admin/product/${row.id}`}
@@ -262,23 +287,63 @@ export default function Product() {
     },
   ];
 
+  // --- Early Return States ---
+  if (!reduxProjectId) {
+    return (
+      <div className="p-8 text-slate-500">
+        Please select a project to view products.
+      </div>
+    );
+  }
+  if (isError) {
+    return <div className="p-8 text-red-500">Failed to load products.</div>;
+  }
+
   return (
     <>
-      <AppHeader searchValue="" onSearchChange={() => {}} />
+      <div className="px-6 py-6 flex justify-between items-center bg-white gap-4">
+        <div className="w-full max-w-md">
+          <AppSearch
+            value={localSearch}
+            onChange={(val) => handleSearchChange(val)}
+            placeholder="Search products..."
+          />
+        </div>
 
-      <ProductHeader
-        onCreate={() => {
-          setSelectedProduct(null);
-          setIsUpdate(false);
-          setDrawer(true);
-        }}
-      />
-
-      <div className="p-8">
-        <AppTable columns={columns} data={products} isLoading={isLoading} />
+        <button
+          onClick={() => {
+            setSelectedProduct(null);
+            setIsUpdate(false);
+            setDrawer(true);
+          }}
+          className="bg-cyan-400 hover:bg-cyan-500 text-black px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 shrink-0"
+        >
+          <Plus size={16} />
+          <span className="whitespace-nowrap">New Product</span>
+        </button>
       </div>
 
-      <AppDrawer
+      <div className="p-8 space-y-6">
+        {/* REUSABLE SEARCH INPUT */}
+
+        {/* DATA TABLE VIEW */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+          <AppTable columns={columns} data={products} isLoading={isPending} />
+        </div>
+
+        {/* REUSABLE PAGINATION FOOTER */}
+        {paginationData && (
+          <AppPagination
+            currentPage={page}
+            totalPages={paginationData.total_pages}
+            totalEntries={paginationData.total}
+            onPageChange={setPage}
+          />
+        )}
+      </div>
+
+      {/* USING MODAL CONTAINER INSTEAD OF DRAWER AS REQUESTED */}
+      <AppModal
         title={isUpdate ? "Update Product" : "Create Product"}
         isOpen={drawer}
         onClose={() => setDrawer(false)}
@@ -290,7 +355,7 @@ export default function Product() {
           onSubmit={handleSubmit}
           brandOption={brandChoice}
         />
-      </AppDrawer>
+      </AppModal>
 
       <ProductDelete
         open={deleteModal}

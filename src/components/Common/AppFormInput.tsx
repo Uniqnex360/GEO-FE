@@ -1,12 +1,19 @@
-import type {
-  FieldValues,
-  UseFormRegister,
-  RegisterOptions,
-  FieldError,
-  Path,
-  UseFormStateReturn,
+import { useState, useRef, useEffect } from "react";
+import { ChevronDown, X } from "lucide-react";
+import {
+  Controller,
+  type FieldValues,
+  type UseFormRegister,
+  type RegisterOptions,
+  type FieldError,
+  type Path,
+  type UseFormStateReturn,
+  type Control,
 } from "react-hook-form";
 
+// ==========================================
+// TYPES & INTERFACES
+// ==========================================
 interface SelectOption {
   id: string | number | boolean;
   value: string;
@@ -23,8 +30,210 @@ interface AppFormInputProps<T extends FieldValues> {
   className?: string;
   formState?: UseFormStateReturn<T>;
   options?: SelectOption[];
+
+  // Custom Multi-Select Configuration Props
+  
+  control?: Control<T>;
+  searchable?: boolean;
+  selectAllLabel?: string;
 }
 
+// ==========================================
+// INNER COMPONENT: THE DROPDOWN LAYER
+// ==========================================
+interface MultiSelectLayerProps {
+  options: SelectOption[];
+  value: any[];
+  onChange: (value: any[]) => void;
+  placeholder?: string;
+  searchable?: boolean;
+  selectAllLabel?: string;
+}
+
+function DropdownMultiSelect({
+  options,
+  value = [],
+  onChange,
+  placeholder = "Select...",
+  searchable = true,
+  selectAllLabel = "Select All",
+}: MultiSelectLayerProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Normalize active form value ensuring it's always array safely
+  const selectedValues = Array.isArray(value) ? value : [];
+
+  // Filter options based on local search term
+  const filteredOptions = searchable
+    ? options.filter((opt) =>
+        opt.value.toLowerCase().includes(search.toLowerCase()),
+      )
+    : options;
+
+  const allSelected =
+    options.length > 0 &&
+    options.every((opt) => selectedValues.includes(opt.id));
+
+  // Toggle single values and immediately fire onChange (No "OK" button)
+  const toggleOption = (optionId: any) => {
+    const isRemoving = selectedValues.includes(optionId);
+    const updated = isRemoving
+      ? selectedValues.filter((v) => v !== optionId)
+      : [...selectedValues, optionId];
+    onChange(updated);
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      onChange([]);
+    } else {
+      onChange(options.map((opt) => opt.id));
+    }
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // UI calculations for selection preview tags
+  const visibleValues = selectedValues.slice(0, 2);
+  const remainingCount = selectedValues.length - 2;
+  const isAll =
+    options.length > 0 &&
+    options.every((opt) => selectedValues.includes(opt.id));
+
+  return (
+    <div className="relative inline-block w-full" ref={wrapperRef}>
+      {/* TRIGGER INPUT BAR */}
+      <div
+        className="flex items-center gap-1 w-full px-3 py-2 border border-gray-300 rounded cursor-pointer bg-white min-h-[42px] focus-within:ring-2 focus-within:ring-blue-400"
+        onClick={() => setIsOpen((p) => !p)}
+      >
+        {selectedValues.length === 0 && (
+          <span className="text-sm text-gray-400">{placeholder}</span>
+        )}
+
+        {isAll && (
+          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded font-medium">
+            All
+          </span>
+        )}
+
+        {!isAll && (
+          <div className="flex items-center gap-1 flex-1 overflow-hidden">
+            {visibleValues.map((valId) => {
+              const matchedOpt = options.find((o) => o.id === valId);
+              if (!matchedOpt) return null;
+              return (
+                <span
+                  key={String(valId)}
+                  className="flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded font-medium"
+                >
+                  {matchedOpt.value}
+                  <X
+                    size={12}
+                    className="cursor-pointer hover:text-blue-900"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onChange(selectedValues.filter((v) => v !== valId));
+                    }}
+                  />
+                </span>
+              );
+            })}
+
+            {remainingCount > 0 && (
+              <span className="text-xs text-gray-500 font-medium">
+                +{remainingCount} more
+              </span>
+            )}
+          </div>
+        )}
+
+        <ChevronDown size={18} className="ml-auto text-gray-400 shrink-0" />
+      </div>
+
+      {/* FLOATING DROPDOWN PANELS */}
+      {isOpen && (
+        <div className="absolute z-[1000] mt-1 w-full bg-white border border-gray-200 rounded shadow-lg max-h-[300px] flex flex-col overflow-hidden">
+          {searchable && (
+            <div className="p-2 border-b border-gray-100">
+              <input
+                type="text"
+                className="w-full px-2 py-1 text-sm border border-gray-200 rounded outline-none focus:border-blue-500"
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onClick={(e) => e.stopPropagation()} // Stop toggle closure collapse
+              />
+            </div>
+          )}
+
+          <div
+            className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 flex items-center gap-2 border-b border-gray-100 select-none"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSelectAll();
+            }}
+          >
+            <input
+              type="checkbox"
+              readOnly
+              checked={allSelected}
+              className="cursor-pointer"
+            />
+            <span className="font-medium text-slate-700">{selectAllLabel}</span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {filteredOptions.length === 0 ? (
+              <div className="px-3 py-3 text-xs text-gray-400 italic text-center">
+                No match options found
+              </div>
+            ) : (
+              filteredOptions.map((option) => (
+                <div
+                  key={String(option.id)}
+                  className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 flex items-center gap-2 select-none"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleOption(option.id);
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    readOnly
+                    checked={selectedValues.includes(option.id)}
+                    className="cursor-pointer"
+                  />
+                  <span className="truncate text-slate-700">
+                    {option.value}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// CORE COMPONENT: APPFORMINPUT
+// ==========================================
 const AppFormInput = <T extends FieldValues>({
   label,
   name,
@@ -36,6 +245,9 @@ const AppFormInput = <T extends FieldValues>({
   className = "",
   formState,
   options = [],
+  control,
+  searchable = true,
+  selectAllLabel = "Select All",
 }: AppFormInputProps<T>) => {
   const showError = !!error && formState?.isSubmitted;
 
@@ -62,15 +274,60 @@ const AppFormInput = <T extends FieldValues>({
       )}
 
       {/* SELECT */}
-      {type === "select" && (
-        <select {...register(name, rules)} className={`${inputClass} bg-white text-slate-900`}>
-          <option value="">Select {label}</option>
-          {options.map((option) => (
-            <option key={String(option.id)} value={String(option.id)}>
-              {option.value}
-            </option>
-          ))}
-        </select>
+      {/* SELECT */}
+      {type === "select" &&
+        (control ? (
+          <Controller
+            name={name}
+            control={control}
+            rules={rules}
+            render={({ field: { onChange, value } }) => (
+              <select
+                onChange={onChange}
+                value={value ?? ""} // Safely fall back to empty string if undefined
+                className={`${inputClass} bg-white text-slate-900`}
+              >
+                <option value="">Select {label}</option>
+                {options.map((option) => (
+                  <option key={String(option.id)} value={String(option.id)}>
+                    {option.value}
+                  </option>
+                ))}
+              </select>
+            )}
+          />
+        ) : (
+          // Fallback block if control isn't provided somewhere else
+          <select
+            {...register(name, rules)}
+            className={`${inputClass} bg-white text-slate-900`}
+          >
+            <option value="">Select {label}</option>
+            {options.map((option) => (
+              <option key={String(option.id)} value={String(option.id)}>
+                {option.value}
+              </option>
+            ))}
+          </select>
+        ))}
+
+      {/* RE-ENGINEERED INSTANT MULTI-SELECT */}
+      {type === "multiselect" && control && (
+        <Controller
+          name={name}
+          control={control}
+          rules={rules}
+          render={({ field: { onChange, value } }) => (
+            <DropdownMultiSelect
+              options={options}
+              value={value}
+              onChange={onChange}
+              placeholder={placeholder || `Select ${label}...`}
+              searchable={searchable}
+              selectAllLabel={selectAllLabel}
+            />
+          )}
+        />
       )}
 
       {/* CHECKBOX */}
@@ -102,7 +359,9 @@ const AppFormInput = <T extends FieldValues>({
       )}
 
       {/* DEFAULT INPUT TYPES */}
-      {!["textarea", "select", "checkbox", "radio"].includes(type) && (
+      {!["textarea", "select", "multiselect", "checkbox", "radio"].includes(
+        type,
+      ) && (
         <input
           type={type}
           {...register(name, rules)}

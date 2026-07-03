@@ -57,10 +57,11 @@ export default function Layout() {
   // ==========================================
   const { data } = useQuery({
     queryKey: ["projects"],
+    //@ts-ignore
     queryFn: projectService.getList,
     staleTime: 1000 * 60 * 5, // Cache stays completely fresh for 5 mins
   });
-
+  //@ts-ignore
   const projects: Project[] = Array.isArray(data) ? data : (data?.data ?? []);
 
   // ==========================================

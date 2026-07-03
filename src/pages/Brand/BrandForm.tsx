@@ -10,6 +10,7 @@ export type BrandCU = {
   industry: string;
   country: string;
   competitor: string;
+  tenant_id?: string
 };
 
 interface Props {

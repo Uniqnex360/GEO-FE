@@ -1,10 +1,15 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useOutletContext } from "react-router-dom";
+import { useState, useEffect } from "react";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { useSelector, useDispatch } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import type { AxiosError } from "axios";
-import { createPortal } from "react-dom"; // Optional helper to render button cleanly into layout header
+import { createPortal } from "react-dom";
 import {
   Plus,
   Globe,
@@ -20,28 +25,35 @@ import {
   selectGlobalProjectId,
   setGlobalProjectId,
 } from "../../store/projectSlice";
-import AppDrawer from "../../components/Common/AppDrawer";
-import ProjectForm from "./ProjectForm";
+import AppModal from "../../components/Common/AppModel";
+import ProjectForm, { type ProjectCU } from "./ProjectForm";
 import ProjectDeleteModal from "./ProjectDelete";
+
+// Reusable inputs imports
+import { AppSearch } from "../../components/Common/AppSearch";
+import { AppPagination } from "../../components/Common/AppPagination";
 
 export interface Project {
   id: number;
   name: string;
-  website: string;
+  website_url?: string;
   status: "Active" | "Crawling" | "Paused";
-  country: string;
+  is_active: boolean;
+  countries?: string[];
   updatedAt: string;
   productsCount: number;
   visibilityScore: number;
   platforms: string[];
 }
 
-export interface ProjectCU {
-  id?: number;
-  name: string;
-  website: string;
-  country: string;
-  status?: "Active" | "Crawling" | "Paused";
+export interface BackendResponse {
+  data: Project[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    total_pages: number;
+  };
 }
 
 type ApiError = { message?: string; detail?: string };
@@ -49,18 +61,78 @@ type ApiError = { message?: string; detail?: string };
 export default function ProjectDashboard() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
-
-  // 1. Get the real persisted selection value from Redux
   const reduxProjectId = useSelector(selectGlobalProjectId);
 
-  // 2. Consume shared list loaded from Layout context (prevents double network requests!)
-  const { projects } = useOutletContext<{ projects: Project[] }>();
+  // --- URL State Initialization via React Router ---
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Dialog States
+  // Extract page and search values from URL, falling back to defaults
+  const page = Number(searchParams.get("page")) || 1;
+  const searchTerm = searchParams.get("search") || "";
+  const limit = 24;
+
+  // --- Local Search State for Debouncing ---
+  const [localSearch, setLocalSearch] = useState(searchTerm);
+
+  // --- Sync State Helpers (Rewritten for explicit URL updates) ---
+  const setPage = (newPage: number) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("page", String(newPage));
+    setSearchParams(params);
+  };
+
+  const setSearchTerm = (newSearch: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (newSearch) {
+      params.set("search", newSearch);
+    } else {
+      params.delete("search");
+    }
+    params.set("page", "1"); // Reset page context during dynamic filtering
+    setSearchParams(params);
+  };
+
+  // --- The Missing Input Handler Function Fixed Here ---
+  const handleSearchChange = (val: string) => {
+    setLocalSearch(val);
+  };
+
+  // Debounce effect: Updates URL params 300ms after user stops typing
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(localSearch);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [localSearch]);
+
+  // Sync local search value if the URL search param changes from elsewhere (e.g., browser back button)
+  useEffect(() => {
+    setLocalSearch(searchTerm);
+  }, [searchTerm]);
+
+  // React Query links directly to values extracted from the URL
+  const {
+    data: projectsData,
+    isPending,
+    isError,
+  } = useQuery<BackendResponse, AxiosError<ApiError>>({
+    queryKey: ["projects", page, searchTerm],
+    queryFn: () =>
+      projectService.getList({
+        page,
+        limit,
+        search: searchTerm || undefined,
+      }),
+    placeholderData: keepPreviousData,
+  });
+
+  const projects = projectsData?.data || [];
+  const paginationData = projectsData?.pagination;
+
+  // Dialog & Selection States
   const [drawer, setDrawer] = useState(false);
-  //@ts-ignore
   const [deleteModal, setDeleteModal] = useState(false);
-  //@ts-ignore
   const [selectedProject, setSelectedProject] = useState<ProjectCU | null>(
     null,
   );
@@ -86,7 +158,6 @@ export default function ProjectDashboard() {
   };
 
   // Mutations
-  //@ts-ignore
   const createMutation = useMutation<Project, AxiosError<ApiError>, ProjectCU>({
     mutationFn: projectService.createProject,
     onSuccess: () =>
@@ -95,16 +166,17 @@ export default function ProjectDashboard() {
       ),
     onError: handleMutationError,
   });
-  //@ts-ignore
+
   const updateMutation = useMutation<Project, AxiosError<ApiError>, ProjectCU>({
-    mutationFn: (payload) => projectService.updateProject(payload.id!, payload),
+    mutationFn: (payload) =>
+      projectService.updateProject(Number(payload.id!), payload),
     onSuccess: () =>
       handleMutationSuccess("Project updated successfully", () =>
         setDrawer(false),
       ),
     onError: handleMutationError,
   });
-  //@ts-ignore
+
   const deleteMutation = useMutation<void, AxiosError<ApiError>, number>({
     mutationFn: projectService.deleteProject,
     onSuccess: () => {
@@ -118,14 +190,22 @@ export default function ProjectDashboard() {
     onError: handleMutationError,
   });
 
+  const handleFormSubmit = (data: ProjectCU) => {
+    if (isUpdate && selectedProject?.id) {
+      updateMutation.mutate({ ...data, id: selectedProject.id });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
   const handleEdit = (project: Project, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedProject({
+      //@ts-ignore
       id: project.id,
       name: project.name,
-      website: project.website,
-      country: project.country,
-      status: project.status,
+      website_url: project.website_url,
+      countries: project.countries,
     });
     setIsUpdate(true);
     setDrawer(true);
@@ -150,10 +230,14 @@ export default function ProjectDashboard() {
     }
   };
 
-  // Header Portal: Teleports the "New Project" action button up into the layout's header actions div cleanly
   const headerActionsContainer = document.getElementById(
     "layout-actions-portal",
   );
+
+  if (isPending)
+    return <div className="p-6 text-slate-500">Loading projects...</div>;
+  if (isError)
+    return <div className="p-6 text-red-500">Failed to load projects.</div>;
 
   return (
     <>
@@ -171,6 +255,13 @@ export default function ProjectDashboard() {
           </button>,
           headerActionsContainer,
         )}
+
+      {/* REUSABLE SEARCH INPUT */}
+      <AppSearch
+        value={localSearch}
+        onChange={(val) => handleSearchChange(val)}
+        placeholder="Search projects..."
+      />
 
       {/* Main Responsive Grid List view */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -205,7 +296,7 @@ export default function ProjectDashboard() {
                       </h3>
                       <span className="text-xs text-slate-400 font-medium flex items-center gap-1 mt-0.5">
                         <Globe className="w-3 h-3 text-slate-300" />{" "}
-                        {project.website || "No Website"}
+                        {project.website_url || "No Website"}
                       </span>
                     </div>
                   </div>
@@ -228,15 +319,23 @@ export default function ProjectDashboard() {
 
                 <div className="flex items-center gap-2 mb-5">
                   <span
-                    className={`text-[11px] font-bold tracking-wide px-2.5 py-0.5 rounded-full border ${getStatusStyle(project.status)} flex items-center gap-1.5`}
+                    className={`text-[11px] font-bold tracking-wide px-2.5 py-0.5 rounded-full border ${getStatusStyle(
+                      project.status,
+                    )} flex items-center gap-1.5`}
                   >
                     <span
-                      className={`w-1.5 h-1.5 rounded-full ${project.status === "Active" ? "bg-emerald-500" : project.status === "Crawling" ? "bg-amber-500" : "bg-slate-400"}`}
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        project.status === "Active"
+                          ? "bg-emerald-500"
+                          : project.status === "Crawling"
+                            ? "bg-amber-500"
+                            : "bg-slate-400"
+                      }`}
                     />
-                    {project.status || "Active"}
+                    {project.is_active ? "Active" : "Inactive"}
                   </span>
                   <span className="text-xs text-slate-400 font-medium">
-                    {project.country || "-"} · updated{" "}
+                    {project.countries?.join(", ") || "-"} · updated{" "}
                     {project.updatedAt || "just now"}
                   </span>
                 </div>
@@ -296,19 +395,37 @@ export default function ProjectDashboard() {
         })}
       </div>
 
-      <AppDrawer
-        title={isUpdate ? "Update Project" : "Create New Project"}
+      {/* REUSABLE PAGINATION FOOTER */}
+      {paginationData && (
+        <AppPagination
+          currentPage={page}
+          totalPages={paginationData.total_pages}
+          totalEntries={paginationData.total}
+          onPageChange={setPage}
+        />
+      )}
+
+      <AppModal
         isOpen={drawer}
+        title={isUpdate ? "Update Project" : "Create New Project"}
         onClose={() => setDrawer(false)}
       >
-        <ProjectForm />
-      </AppDrawer>
+        <ProjectForm
+          key={
+            selectedProject?.id ? `edit-${selectedProject.id}` : "create-new"
+          }
+          initialData={selectedProject}
+          isUpdate={isUpdate}
+          loading={createMutation.isPending || updateMutation.isPending}
+          onSubmit={handleFormSubmit}
+        />
+      </AppModal>
 
       <ProjectDeleteModal
-        // open={deleteModal}
-        // loading={deleteMutation.isPending}
-        // onClose={() => setDeleteModal(false)}
-        // onDelete={() => deleteId && deleteMutation.mutate(deleteId)}
+        open={deleteModal}
+        loading={deleteMutation.isPending}
+        onClose={() => setDeleteModal(false)}
+        onDelete={() => deleteId && deleteMutation.mutate(deleteId)}
       />
     </>
   );
