@@ -89,6 +89,7 @@ export interface GetProductsParams {
   limit?: number;
   search?: string;
   tenant_id?: number;
+  brand?: string;
 }
 
 // ==========================================

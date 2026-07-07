@@ -19,7 +19,8 @@ import AppModal from "../../components/Common/AppModel";
 import ProductForm from "./ProductForm";
 import ProductDelete from "./ProductDelete";
 import { brandService, type AppMetaList } from "../../api/brand";
-import { selectGlobalProjectId } from "../../store/projectSlice"; // Adjust path if necessary
+import { selectGlobalProjectId } from "../../store/projectSlice";
+import { AppMultiSelect } from "../../components/Common/AppMultiSelect";
 
 // Import your newly refactored schema and client layer
 import {
@@ -53,6 +54,23 @@ export default function Product() {
   const page = Number(searchParams.get("page")) || 1;
   const searchTerm = searchParams.get("search") || "";
   const limit = 24;
+  const brandParam = searchParams.get("brand") || "";
+  const selectedBrands = brandParam
+    ? brandParam.split(",").filter(Boolean)
+    : [];
+
+  const setBrandFilter = (brands: string[]) => {
+    const params = new URLSearchParams(searchParams);
+
+    if (brands.length) {
+      params.set("brand", brands.join(","));
+    } else {
+      params.delete("brand");
+    }
+
+    params.set("page", "1");
+    setSearchParams(params);
+  };
 
   // --- Local Search Input Debouncing State ---
   const [localSearch, setLocalSearch] = useState(searchTerm);
@@ -121,17 +139,31 @@ export default function Product() {
   // ==========================================
   // React Query Fetch (Listens to Tenant Redux Changes)
   // ==========================================
+  // const { data, isPending, isError } = useQuery({
+  //   // Adding reduxProjectId here forces an immediate query auto-refresh whenever it mutates
+  //   queryKey: ["products", reduxProjectId, page, searchTerm],
+  //   queryFn: () =>
+  //     productService.getProducts({
+  //       page,
+  //       limit,
+  //       search: searchTerm || undefined,
+  //       tenant_id: reduxProjectId ? Number(reduxProjectId) : undefined, // Passing Tenant ID cleanly
+  //     }),
+  //   enabled: !!reduxProjectId, // Safely avoids executing queries if no tenant context is active
+  //   placeholderData: keepPreviousData,
+  // });
+
   const { data, isPending, isError } = useQuery({
-    // Adding reduxProjectId here forces an immediate query auto-refresh whenever it mutates
-    queryKey: ["products", reduxProjectId, page, searchTerm],
+    queryKey: ["products", reduxProjectId, page, searchTerm, selectedBrands],
     queryFn: () =>
       productService.getProducts({
         page,
         limit,
         search: searchTerm || undefined,
-        tenant_id: reduxProjectId ? Number(reduxProjectId) : undefined, // Passing Tenant ID cleanly
+        tenant_id: reduxProjectId ? Number(reduxProjectId) : undefined,
+        brand: selectedBrands.length ? selectedBrands.join(",") : undefined,
       }),
-    enabled: !!reduxProjectId, // Safely avoids executing queries if no tenant context is active
+    enabled: !!reduxProjectId,
     placeholderData: keepPreviousData,
   });
 
@@ -149,6 +181,7 @@ export default function Product() {
   });
 
   const brandChoice: AppMetaList[] = brandChoiceData ?? [];
+  const brandOptions = brandChoice.map((b) => b.value);
 
   // ==========================================
   // Mutations
@@ -301,13 +334,46 @@ export default function Product() {
 
   return (
     <>
-      <div className="px-6 py-6 flex justify-between items-center bg-white gap-4">
+      {/* <div className="px-6 py-6 flex justify-between items-center bg-white gap-4">
         <div className="w-full max-w-md">
           <AppSearch
             value={localSearch}
             onChange={(val) => handleSearchChange(val)}
             placeholder="Search products..."
           />
+        </div>
+
+        <button
+          onClick={() => {
+            setSelectedProduct(null);
+            setIsUpdate(false);
+            setDrawer(true);
+          }}
+          className="bg-cyan-400 hover:bg-cyan-500 text-black px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 shrink-0"
+        >
+          <Plus size={16} />
+          <span className="whitespace-nowrap">New Product</span>
+        </button>
+      </div> */}
+
+      <div className="px-6 py-6 flex justify-between items-center  gap-4">
+        <div className="flex items-center gap-3 flex-1">
+          <div className="w-full max-w-md">
+            <AppSearch
+              value={localSearch}
+              onChange={handleSearchChange}
+              placeholder="Search products..."
+            />
+          </div>
+
+          <div className="w-64">
+            <AppMultiSelect
+              options={brandOptions}
+              value={selectedBrands}
+              onChange={setBrandFilter}
+              placeholder="Brands"
+            />
+          </div>
         </div>
 
         <button

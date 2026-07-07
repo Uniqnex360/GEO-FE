@@ -679,14 +679,13 @@ export default function ProductDashboard() {
               </p>
             </div>
           </div>
-          <button className="px-4 py-1.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition">
-            Edit
-          </button>
         </div>
 
         {/* Global Scores Banner Block */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 bg-blue-600 rounded-xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm">
+        <div className="space-y-4">
+          {/* Full Width Blue Banner */}
+          {/* <div className="bg-blue-600 rounded-xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm"> */}
+          <div className="bg-gradient-to-r from-blue-700  to-cyan-500 rounded-xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-lg">
             <div>
               <span className="text-xs font-semibold uppercase tracking-wider text-blue-200">
                 AI Visibility Score
@@ -698,6 +697,7 @@ export default function ProductDashboard() {
                 <span className="text-sm opacity-80">out of 100</span>
               </div>
             </div>
+
             <div className="flex gap-8 border-t md:border-t-0 md:border-l border-blue-500 pt-4 md:pt-0 md:pl-8 w-full md:w-auto justify-around">
               <div>
                 <span className="text-xs text-blue-200 block">
@@ -707,6 +707,7 @@ export default function ProductDashboard() {
                   {productInfo?.globalScores?.mentionRate}%
                 </span>
               </div>
+
               <div>
                 <span className="text-xs text-blue-200 block">
                   Reviews Count
@@ -718,9 +719,10 @@ export default function ProductDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 w-full">
-            {//@ts-ignore
-            productInfo?.engineBreakdown?.map((engine) => (
+          {/* 4 Model Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* @ts-ignore */}
+            {productInfo?.engineBreakdown?.map((engine) => (
               <div
                 key={engine.name}
                 className="bg-slate-100/70 border border-slate-200/60 rounded-xl p-3 text-center flex flex-col justify-center"
@@ -782,7 +784,7 @@ export default function ProductDashboard() {
 /* ==========================================
    TAB PANEL: VISIBILITY (PAGE 1)
    ========================================== */
-   //@ts-ignore
+//@ts-ignore
 function VisibilityTabContent({ data }) {
   if (!data) return null;
   return (
@@ -831,7 +833,7 @@ function VisibilityTabContent({ data }) {
             FAQs & Reviews
           </h3>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-4 text-center">
+            <div className="bg-amber-100/60 border border-amber-200 rounded-xl p-4 text-center">
               <span className="text-xl block mb-1">❓</span>
               <span className="text-3xl font-black text-slate-800">
                 {data.faqCount}
@@ -840,7 +842,7 @@ function VisibilityTabContent({ data }) {
                 FAQs
               </span>
             </div>
-            <div className="bg-purple-50/60 border border-purple-100 rounded-xl p-4 text-center">
+            <div className="bg-purple-100/60 border border-purple-200 rounded-xl p-4 text-center">
               <span className="text-xl block mb-1">💬</span>
               <span className="text-3xl font-black text-slate-800">
                 {data.reviewCount}
@@ -872,7 +874,7 @@ function VisibilityTabContent({ data }) {
 /* ==========================================
    TAB PANEL: COMPETITOR ASSESSMENT MATRIX
    ========================================== */
-   //@ts-ignore
+//@ts-ignore
 function CompetitorTabContent({ data }) {
   if (!data) return null;
 
@@ -950,15 +952,16 @@ function CompetitorTabContent({ data }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-2 bg-slate-900 rounded-xl p-6 text-white shadow-sm flex flex-col justify-between">
+        <div className="lg:col-span-2 bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
-            <h3 className="text-sm font-bold text-slate-200">
+            <h3 className="text-sm font-bold text-slate-900">
               Competitive Posture
             </h3>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-slate-500">
               You vs top competitor
             </span>
           </div>
+
           <div className="h-56 my-4 flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart
@@ -967,16 +970,16 @@ function CompetitorTabContent({ data }) {
                 outerRadius="80%"
                 data={data.radarData}
               >
-                <PolarGrid stroke="#334155" />
+                <PolarGrid stroke="#cbd5e1" />
                 <PolarAngleAxis
                   dataKey="subject"
-                  stroke="#94a3b8"
-                  tick={{ fontSize: 10 }}
+                  stroke="#64748b"
+                  tick={{ fontSize: 10, fill: "#475569" }}
                 />
                 <PolarRadiusAxis
                   angle={30}
                   domain={[0, 100]}
-                  stroke="#334155"
+                  stroke="#cbd5e1"
                   tick={false}
                 />
                 <Radar
@@ -994,69 +997,80 @@ function CompetitorTabContent({ data }) {
                   fillOpacity={0.15}
                 />
                 <Legend
-                  wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }}
+                  wrapperStyle={{
+                    fontSize: "11px",
+                    paddingTop: "10px",
+                    color: "#334155",
+                  }}
                 />
               </RadarChart>
             </ResponsiveContainer>
           </div>
-          <div className="bg-slate-800/80 p-3 rounded-lg border border-slate-700/50 flex justify-between text-xs">
-            <span className="font-medium text-slate-300">
+
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex justify-between text-xs">
+            <span className="font-medium text-slate-700">
               Reviews Metric Analysis:
             </span>
-            <span className="text-amber-400 font-semibold">
+
+            <span className="text-amber-600 font-semibold">
               {data.radarSummaryText}
             </span>
           </div>
         </div>
 
-        <div className="lg:col-span-3 bg-slate-900 rounded-xl p-6 text-white shadow-sm flex flex-col justify-between">
+        <div className="lg:col-span-3 bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-3">
               <div>
-                <h3 className="text-sm font-bold text-slate-200">
+                <h3 className="text-sm font-bold text-slate-900">
                   Content & Schema Gaps
                 </h3>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-500">
                   Optimization elements breakdown
                 </span>
               </div>
-              <span className="bg-rose-500/20 text-rose-300 text-[10px] font-bold px-2 py-0.5 rounded border border-rose-500/30">
+
+              <span className="bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded border border-rose-200">
                 ⚠️ {data.priorityCountText || "Gaps Found"}
               </span>
             </div>
 
-            <div className="space-y-2.5 text-xs">
+            <div className="space-y-3 text-xs">
               {//@ts-ignore
               data.gaps?.map((item, index) => (
                 <div
                   key={index}
-                  className="space-y-1 bg-slate-800/40 p-2 rounded border border-slate-800"
+                  className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200"
                 >
-                  <div className="flex justify-between text-[11px]">
-                    <span className="font-semibold text-slate-200">
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="font-semibold text-slate-800">
                       {item.title}
                     </span>
+
                     <span
                       className={
                         item.status === "High"
-                          ? "text-rose-400 font-bold"
-                          : "text-amber-400"
+                          ? "text-rose-600 font-bold"
+                          : "text-amber-600 font-semibold"
                       }
                     >
                       {item.gain}
                     </span>
                   </div>
+
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-slate-400 w-10">
+                    <span className="text-[10px] text-slate-500 w-12">
                       You: {item.you}
                     </span>
-                    <div className="flex-1 bg-slate-700 h-1.5 rounded-full overflow-hidden">
+
+                    <div className="flex-1 bg-slate-200 h-2 rounded-full overflow-hidden">
                       <div
-                        className="bg-emerald-400 h-1.5 rounded-full"
+                        className="bg-emerald-500 h-2 rounded-full"
                         style={{ width: `${item.you}%` }}
-                      ></div>
+                      />
                     </div>
-                    <span className="text-[10px] text-slate-400 w-12 text-right">
+
+                    <span className="text-[10px] text-slate-500 w-12 text-right">
                       Top: {item.top}
                     </span>
                   </div>
@@ -1064,9 +1078,6 @@ function CompetitorTabContent({ data }) {
               ))}
             </div>
           </div>
-          <button className="w-full bg-emerald-500 text-slate-950 font-bold text-xs py-2 rounded-lg hover:bg-emerald-400 transition mt-4">
-            Generate GEO plan to close gaps
-          </button>
         </div>
       </div>
     </div>
