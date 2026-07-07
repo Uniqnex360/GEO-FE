@@ -6,6 +6,7 @@ const ENDPOINTS = {
   PRODUCT_UPDATE: `${API_V1}product/update`,
   PRODUCT_DELETE: `${API_V1}product/delete`,
   PRODUCT_DETAIL: `${API_V1}product/detail`,
+  PRODUCT_DETAIL_V2: `${API_V1}product/detail/v2`,
 } as const;
 
 // ==========================================
@@ -99,7 +100,7 @@ class ProductService {
    * Fetches a paginated sequence of product schemas filtered by search criteria and tenant mapping
    */
   async getProducts(params?: GetProductsParams): Promise<ProductList> {
-    console.log("parmas", params)
+    console.log("parmas", params);
     const res = await api.get<ProductList>(ENDPOINTS.PRODUCT_LIST, {
       params, // Axios binds these directly to the URL string context automatically (?page=X&tenant_id=Y)
     });
@@ -125,8 +126,10 @@ class ProductService {
     return res.data;
   }
 
-  async productDetail(id: number) {
-    const res = await api.get(`${ENDPOINTS.PRODUCT_DETAIL}/${id}/`);
+  async productDetail(id: number, tab: string) {
+    const res = await api.get(`${ENDPOINTS.PRODUCT_DETAIL_V2}/${id}/`, {
+      params: { tab },
+    });
     return res.data;
   }
 

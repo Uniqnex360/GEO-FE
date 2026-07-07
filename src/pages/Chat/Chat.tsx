@@ -13,6 +13,9 @@ import {
   Check, // Added for Copy Success State
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useSelector } from "react-redux";
+
+import { selectGlobalProjectId } from "../../store/projectSlice";
 
 // Import the package as a default object
 //@ts-ignore
@@ -483,6 +486,8 @@ export default function Chat() {
     ];
   };
 
+  const reduxProjectId = useSelector(selectGlobalProjectId);
+
   const countryOptions = getCountryList();
 
   // Core Sidebar Fields
@@ -568,7 +573,7 @@ export default function Chat() {
 
     try {
       await streamApi<any>(
-        "api/v1/chat/init_llm_analyzes/",
+        "api/v1/chat/v2/init_llm_analyzes/",
         {
           product_name: productName.trim() || null,
           website: website.trim() || null,
@@ -579,6 +584,7 @@ export default function Chat() {
           upc: upc.trim() || null,
           extra_context: extraContext,
           countries: selectedCountries,
+          tenant_id: Number(reduxProjectId),
         },
         (event: any) => {
           if (event.type === "status") {
