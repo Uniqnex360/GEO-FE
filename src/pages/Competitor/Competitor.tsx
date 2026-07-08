@@ -144,11 +144,11 @@ export default function CompetitorIntelligence() {
       key: "brand_name",
       label: "BRAND",
       sortable: true,
-      render: (value: string) => (
+      render: (identity: string) => (
         <span
-          className={`font-semibold ${value.toLowerCase().includes("marine") ? "text-blue-600 font-bold" : "text-slate-800"}`}
+          className={`font-semibold ${identity.toLowerCase().includes("marine") ? "text-blue-600 font-bold" : "text-slate-800"}`}
         >
-          {value}
+          {identity}
         </span>
       ),
     },

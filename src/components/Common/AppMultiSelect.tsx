@@ -44,7 +44,7 @@ export function AppMultiSelect({
   }, [isOpen]);
 
   const filteredOptions = searchable
-    ? options.filter((opt) => opt.toLowerCase().includes(search.toLowerCase()))
+    ? options.filter((opt) => String(opt).toLowerCase().includes(search.toLowerCase()))
     : options;
 
   const allSelected =

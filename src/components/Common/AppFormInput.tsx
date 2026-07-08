@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown, X } from "lucide-react";
 import {
   Controller,
+  useFormContext,
   type FieldValues,
   type UseFormRegister,
   type RegisterOptions,
@@ -10,6 +11,9 @@ import {
   type UseFormStateReturn,
   type Control,
 } from "react-hook-form";
+
+// Import your existing single-select component from common components
+import AppRemoteSelect from "./AppRemoteSelect";
 
 // ==========================================
 // TYPES & INTERFACES
@@ -31,15 +35,24 @@ interface AppFormInputProps<T extends FieldValues> {
   formState?: UseFormStateReturn<T>;
   options?: SelectOption[];
 
-  // Custom Multi-Select Configuration Props
-  
+  // Custom Multi-Select & Remote Configuration Props
   control?: Control<T>;
   searchable?: boolean;
   selectAllLabel?: string;
+
+  // Remote API Props passed through to AppRemoteSelect
+  fetchFn?: (
+    search: string,
+    offset: number,
+    limit: number,
+  ) => Promise<{ items: any[]; has_more: boolean; next_offset: number | null }>;
+  queryKey?: string[];
+  limit?: number;
+  disabled?: boolean;
 }
 
 // ==========================================
-// INNER COMPONENT: THE DROPDOWN LAYER
+// INNER COMPONENT: THE DROPDOWN LAYER (UNTOUCHED)
 // ==========================================
 interface MultiSelectLayerProps {
   options: SelectOption[];
@@ -62,10 +75,8 @@ function DropdownMultiSelect({
   const [search, setSearch] = useState("");
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Normalize active form value ensuring it's always array safely
   const selectedValues = Array.isArray(value) ? value : [];
 
-  // Filter options based on local search term
   const filteredOptions = searchable
     ? options.filter((opt) =>
         opt.value.toLowerCase().includes(search.toLowerCase()),
@@ -76,7 +87,6 @@ function DropdownMultiSelect({
     options.length > 0 &&
     options.every((opt) => selectedValues.includes(opt.id));
 
-  // Toggle single values and immediately fire onChange (No "OK" button)
   const toggleOption = (optionId: any) => {
     const isRemoving = selectedValues.includes(optionId);
     const updated = isRemoving
@@ -93,7 +103,6 @@ function DropdownMultiSelect({
     }
   };
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -107,7 +116,6 @@ function DropdownMultiSelect({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // UI calculations for selection preview tags
   const visibleValues = selectedValues.slice(0, 2);
   const remainingCount = selectedValues.length - 2;
   const isAll =
@@ -116,7 +124,6 @@ function DropdownMultiSelect({
 
   return (
     <div className="relative inline-block w-full" ref={wrapperRef}>
-      {/* TRIGGER INPUT BAR */}
       <div
         className="flex items-center gap-1 w-full px-3 py-2 border border-gray-300 rounded cursor-pointer bg-white min-h-[42px] focus-within:ring-2 focus-within:ring-blue-400"
         onClick={() => setIsOpen((p) => !p)}
@@ -165,7 +172,6 @@ function DropdownMultiSelect({
         <ChevronDown size={18} className="ml-auto text-gray-400 shrink-0" />
       </div>
 
-      {/* FLOATING DROPDOWN PANELS */}
       {isOpen && (
         <div className="absolute z-[1000] mt-1 w-full bg-white border border-gray-200 rounded shadow-lg max-h-[300px] flex flex-col overflow-hidden">
           {searchable && (
@@ -176,7 +182,7 @@ function DropdownMultiSelect({
                 placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                onClick={(e) => e.stopPropagation()} // Stop toggle closure collapse
+                onClick={(e) => e.stopPropagation()}
               />
             </div>
           )}
@@ -248,8 +254,16 @@ const AppFormInput = <T extends FieldValues>({
   control,
   searchable = true,
   selectAllLabel = "Select All",
+  fetchFn,
+  queryKey,
+  limit,
+  disabled = false,
 }: AppFormInputProps<T>) => {
   const showError = !!error && formState?.isSubmitted;
+  const context = useFormContext<T>();
+
+  // Resolve control instance dynamically if available
+  const activeControl = control || context?.control;
 
   const inputClass = `w-full border rounded p-2 focus:outline-none focus:ring-2 ${
     showError
@@ -267,55 +281,47 @@ const AppFormInput = <T extends FieldValues>({
       {type === "textarea" && (
         <textarea
           {...register(name, rules)}
+          disabled={disabled}
           placeholder={placeholder}
           rows={4}
           className={inputClass}
         />
       )}
 
-      {/* SELECT */}
-      {/* SELECT */}
-      {type === "select" &&
-        (control ? (
-          <Controller
-            name={name}
-            control={control}
-            rules={rules}
-            render={({ field: { onChange, value } }) => (
-              <select
-                onChange={onChange}
-                value={value ?? ""} // Safely fall back to empty string if undefined
-                className={`${inputClass} bg-white text-slate-900`}
-              >
-                <option value="">Select {label}</option>
-                {options.map((option) => (
-                  <option key={String(option.id)} value={String(option.id)}>
-                    {option.value}
-                  </option>
-                ))}
-              </select>
-            )}
-          />
-        ) : (
-          // Fallback block if control isn't provided somewhere else
-          <select
-            {...register(name, rules)}
-            className={`${inputClass} bg-white text-slate-900`}
-          >
-            <option value="">Select {label}</option>
-            {options.map((option) => (
-              <option key={String(option.id)} value={String(option.id)}>
-                {option.value}
-              </option>
-            ))}
-          </select>
-        ))}
-
-      {/* RE-ENGINEERED INSTANT MULTI-SELECT */}
-      {type === "multiselect" && control && (
+      {/* SINGLE SELECT (Uses the imported AppRemoteSelect component directly) */}
+      {type === "select" && control && (
         <Controller
           name={name}
           control={control}
+          rules={rules}
+          render={({ field: { onChange, value } }) => {
+            // 💡 1. Convert the plain form string into the object format AppRemoteSelect expects
+            const objectValue = value
+              ? { id: value, value: String(value) }
+              : null;
+
+            return (
+              <AppRemoteSelect
+                value={objectValue}
+                onChange={(selectedOption) => {
+                  // 💡 2. Send back just the raw ID string to your React Hook Form state
+                  onChange(selectedOption ? selectedOption.id : "");
+                }}
+                fetchFn={fetchFn}
+                queryKey={queryKey}
+                limit={limit}
+                placeholder={placeholder}
+              />
+            );
+          }}
+        />
+      )}
+
+      {/* RE-ENGINEERED INSTANT MULTI-SELECT (UNTOUCHED) */}
+      {type === "multiselect" && activeControl && (
+        <Controller
+          name={name}
+          control={activeControl}
           rules={rules}
           render={({ field: { onChange, value } }) => (
             <DropdownMultiSelect
@@ -334,6 +340,7 @@ const AppFormInput = <T extends FieldValues>({
       {type === "checkbox" && (
         <input
           type="checkbox"
+          disabled={disabled}
           {...register(name, rules)}
           className="h-4 w-4 cursor-pointer"
         />
@@ -349,6 +356,7 @@ const AppFormInput = <T extends FieldValues>({
             >
               <input
                 type="radio"
+                disabled={disabled}
                 value={String(option.id)}
                 {...register(name, rules)}
               />
@@ -364,6 +372,7 @@ const AppFormInput = <T extends FieldValues>({
       ) && (
         <input
           type={type}
+          disabled={disabled}
           {...register(name, rules)}
           placeholder={placeholder}
           className={inputClass}

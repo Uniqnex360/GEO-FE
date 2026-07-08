@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import AppFormInput from "../../components/Common/AppFormInput";
 import { type ProductCU } from "../../api/product";
 import { type AppMetaList } from "../../api/brand";
+import { metaService } from "../../api/meta";
 
 interface Props {
   initialData?: ProductCU | null;
@@ -24,7 +25,7 @@ export default function ProductForm({
     register,
     handleSubmit,
     reset,
-    // control,
+    control,
     formState,
     formState: { errors },
   } = useForm<ProductCU>({
@@ -113,7 +114,9 @@ export default function ProductForm({
       });
     }
   }, [initialData, reset]);
-
+  {
+    console.log("brandOpiton", brandOption);
+  }
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
@@ -156,23 +159,29 @@ export default function ProductForm({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
         <AppFormInput
-          label="Brand ID"
+          label="Brand"
           name="brand_id"
           type="select"
-          placeholder="Samsung"
+          placeholder="Select a Brand..."
           register={register}
-          rules={{ required: "Brand ID is required", valueAsNumber: true }}
+          //@ts-ignore
+          control={control} // 💡 Add this prop here!
+          rules={{ required: "Selecting a brand is required" }}
           error={errors.brand_id}
           formState={formState}
+          // 💡 Transform data structure inline here if brandOption uses different keys like identity:
           options={brandOption}
         />
         <AppFormInput
-          label="Category"
+          label="Product Category"
           name="category"
-          placeholder="Headphones"
+          type="select"
+          placeholder="Search categories..."
           register={register}
-          error={errors.category}
-          formState={formState}
+          control={control}
+          fetchFn={metaService.get_category}
+          queryKey={["remote-categories"]}
+          limit={20}
         />
         {/* <AppFormInput
             label="Brand Name (Optional)"
