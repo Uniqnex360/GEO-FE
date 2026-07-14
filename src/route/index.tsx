@@ -14,6 +14,7 @@ import ChatRoutes from "./Chat";
 import CitationRoutes from "./Citation";
 import CompetitorRoutes from "./Competitor";
 import ProjectRoutes from "./Project";
+import AdminSettingsRoutes from "./AdminSettings";
 
 export default function AppRouter() {
   return (
@@ -45,6 +46,7 @@ export default function AppRouter() {
           {AIEngineRoutes}
           {CitationRoutes}
           {CompetitorRoutes}
+          {AdminSettingsRoutes}
         </Route>
       </Routes>
     </BrowserRouter>

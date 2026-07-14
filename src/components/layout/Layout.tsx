@@ -12,6 +12,7 @@ import {
   FiBarChart2,
   FiFileText,
   FiTarget,
+  FiSettings,
 } from "react-icons/fi";
 
 import { projectService } from "../../api/project";
@@ -42,6 +43,7 @@ const navItems = [
   { to: "/admin/ai-engine", label: "AI Engine", icon: FiActivity },
   { to: "/admin/citation", label: "Citation", icon: FiBarChart2 },
   { to: "/admin/competitor", label: "Competitor Intelligence", icon: FiTarget },
+  { to: "/admin/settings", label: "Settings", icon: FiSettings },
 ];
 
 export default function Layout() {
