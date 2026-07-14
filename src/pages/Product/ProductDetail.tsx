@@ -75,7 +75,7 @@ export default function ProductDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans p-6">
-      {/* 1. DYNAMIC HEADER BANNER (Perfectly matches Page 1 Layout) */}
+      {/* 1. DYNAMIC HEADER BANNER (Remains visible during tab changes) */}
       <header className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4 mb-4">
           <div className="flex items-center gap-3">
@@ -104,9 +104,7 @@ export default function ProductDashboard() {
 
         {/* Global Scores Banner Block */}
         <div className="space-y-4">
-          {/* Full Width Blue Banner */}
-          {/* <div className="bg-blue-600 rounded-xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm"> */}
-          <div className="bg-gradient-to-r from-blue-700  to-cyan-500 rounded-xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-lg">
+          <div className="bg-gradient-to-r from-blue-700 to-cyan-500 rounded-xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-lg">
             <div>
               <span className="text-xs font-semibold uppercase tracking-wider text-blue-200">
                 AI Visibility Score
@@ -180,8 +178,12 @@ export default function ProductDashboard() {
       {/* 3. DYNAMIC WORKSPACE COMPONENT PANEL */}
       <main className="min-h-[350px]">
         {isLoading ? (
-          <div className="flex items-center justify-center py-20 text-slate-400 font-medium bg-white rounded-xl border border-slate-200 shadow-sm">
-            🔄 Fetching updated tab insights...
+          /* CSS-based circular loader inside the tab space */
+          <div className="flex flex-col items-center justify-center py-24 bg-white rounded-xl border border-slate-200 shadow-sm gap-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
+            <span className="text-sm font-medium text-slate-400">
+              Fetching insights...
+            </span>
           </div>
         ) : (
           <div>

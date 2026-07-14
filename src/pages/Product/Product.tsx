@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import type { AxiosError } from "axios";
-import { Plus } from "lucide-react";
+import { Plus, Box , Eye, MoreVertical  } from "lucide-react";
 
 import AppTable from "../../components/Common/AppTable";
 import { AppSearch } from "../../components/Common/AppSearch";
@@ -47,6 +47,7 @@ export default function Product() {
     null,
   );
   const [isUpdate, setIsUpdate] = useState(false);
+  //@ts-ignore
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   // --- URL Param Synchronization ---
@@ -237,83 +238,118 @@ export default function Product() {
   // ==========================================
   // Table Columns Definition
   // ==========================================
+
+
+  // Helper function to dynamically determine the progress bar color based on value
+  const getVisibilityColor = (value: number) => {
+    if (value >= 70) return "bg-emerald-500";
+    if (value >= 55) return "bg-blue-500";
+    return "bg-amber-500";
+  };
+
   const columns = [
     {
       key: "name",
       label: "PRODUCT",
-      render: (value: string) => (
-        <span className="font-semibold text-slate-900">
-          {value ?? "Unknown Product"}
-        </span>
+      render: (value: string, row: ProductType) => (
+        <div className="flex items-center gap-3">
+          {/* Green Box Icon Container */}
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
+            <Box className="h-5 w-5" />
+          </div>
+          <div className="flex flex-col">
+            <Link
+              to={`/admin/product/${row.id}`}
+              className="text-sm font-semibold text-slate-900 hover:text-cyan-600 transition-colors line-clamp-1"
+            >
+              {value ?? "Unknown Product"}
+            </Link>
+            <span className="text-xs text-slate-400 capitalize">
+              {row.category ?? ""}
+            </span>
+          </div>
+        </div>
       ),
     },
     {
       key: "sku",
       label: "SKU / MPN",
-      render: (_: string, row: ProductType) => {
-        const sku = row.sku ?? "-";
-        const mpn = row.mpn ?? "";
-        const combinedSub = [mpn].filter(Boolean).join(" · ");
-
-        return (
-          <div className="flex flex-col text-xs text-slate-900 font-mono">
-            <span className="text-slate-900 font-sans font-medium">{sku}</span>
-            {combinedSub && <span>{combinedSub}</span>}
-          </div>
-        );
-      },
+      render: (_: string, row: ProductType) => (
+        <div className="flex flex-col text-xs font-mono">
+          <span className="font-sans font-medium text-slate-700">
+            {row.sku ?? "-"}
+          </span>
+          {row.mpn && <span className="text-slate-400">MPN: {row.mpn}</span>}
+        </div>
+      ),
     },
     {
       key: "brand_name",
       label: "BRAND",
       render: (value: string) => (
-        <span className="text-slate-900 font-medium">
-          {value ?? "Unknown Brand"}
+        <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600">
+          {value ?? "Unknown"}
         </span>
       ),
     },
-
-    // {
-    //   key: "analytics.avg_share_of_voice",
-    //   label: "Share of Voice",
-    // },
     {
       key: "analytics.visibility_rate",
-      label: "Visibility",
+      label: "VISIBILITY",
+      render: (value: number) => {
+        const numValue = value ?? 0;
+        return (
+          <div className="flex items-center gap-3 w-28">
+            <div className="h-2 w-full rounded-full bg-slate-100">
+              <div
+                className={`h-2 rounded-full ${getVisibilityColor(numValue)}`}
+                style={{ width: `${numValue}%` }}
+              />
+            </div>
+            <span className="text-sm font-semibold text-slate-700">
+              {numValue}
+            </span>
+          </div>
+        );
+      },
     },
-    {
-      key: "no_of_faqs",
-      label: "FAQ",
-    },
-    {
-      key: "no_of_reviews",
-      label: "Reviews",
-    },
+    // {
+    //   key: "no_of_faqs",
+    //   label: "FAQS",
+    //   render: (value: number) => (
+    //     <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+    //       <HelpCircle className="h-4 w-4 text-amber-500" />
+    //       <span>{value ?? 0}</span>
+    //     </div>
+    //   ),
+    // },
+    // {
+    //   key: "no_of_reviews",
+    //   label: "REVIEWS",
+    //   render: (value: number) => (
+    //     <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+    //       <MessageSquare className="h-4 w-4 text-violet-500" />
+    //       <span>{value ?? 0}</span>
+    //     </div>
+    //   ),
+    // },
     {
       key: "actions",
       label: "ACTIONS",
       render: (_: unknown, row: ProductType) => (
-        <div className="flex items-center justify-end gap-3">
-          <Link
-            to={`/admin/product/${row.id}`}
-            className="text-cyan-400 hover:text-cyan-300 text-sm font-medium"
-          >
-            Open
-          </Link>
-          <button
-            onClick={() => handleEdit(row)}
-            className="text-yellow-400 hover:text-yellow-300 text-sm"
-          >
-            Edit
-          </button>
+        <div className="flex items-center justify-end gap-2 text-slate-400">
           <button
             onClick={() => {
-              setDeleteId(row.id);
-              setDeleteModal(true);
+              /* View logic */
             }}
-            className="text-red-400 hover:text-red-300 text-sm"
+            className="p-1 hover:text-cyan-600 transition-colors"
           >
-            Delete
+            <Eye className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => handleEdit(row)}
+            className="p-1 hover:text-slate-600 transition-colors"
+          >
+            <MoreVertical className="h-4 w-4" />
           </button>
         </div>
       ),
@@ -334,28 +370,6 @@ export default function Product() {
 
   return (
     <>
-      {/* <div className="px-6 py-6 flex justify-between items-center bg-white gap-4">
-        <div className="w-full max-w-md">
-          <AppSearch
-            value={localSearch}
-            onChange={(val) => handleSearchChange(val)}
-            placeholder="Search products..."
-          />
-        </div>
-
-        <button
-          onClick={() => {
-            setSelectedProduct(null);
-            setIsUpdate(false);
-            setDrawer(true);
-          }}
-          className="bg-cyan-400 hover:bg-cyan-500 text-black px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 shrink-0"
-        >
-          <Plus size={16} />
-          <span className="whitespace-nowrap">New Product</span>
-        </button>
-      </div> */}
-
       <div className="px-6 py-6 flex justify-between items-center  gap-4">
         <div className="flex items-center gap-3 flex-1">
           <div className="w-full max-w-md">

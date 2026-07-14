@@ -264,7 +264,7 @@ export default function ProjectDashboard() {
       />
 
       {/* Main Responsive Grid List view */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
         {projects.map((project) => {
           const isSelected = reduxProjectId === project.id;
           const initials = (project.name || "PR")
