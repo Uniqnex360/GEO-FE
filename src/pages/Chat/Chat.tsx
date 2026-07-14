@@ -359,7 +359,7 @@ export default function Chat() {
             setLogs((prev) => [...prev, event]);
           }
           if (event.type === "result") {
-            setResult(event.content);
+            setResult(event.report);
           }
           if (event.type === "error") {
             setLogs((prev) => [
