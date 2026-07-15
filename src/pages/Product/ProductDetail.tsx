@@ -1,6 +1,6 @@
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-// Assuming your service class is imported from your services folder
+import { useState, useEffect } from "react";
 import { productService } from "../../api/product";
 import {
   BarChart,
@@ -16,15 +16,15 @@ import {
   PolarRadiusAxis,
   Radar,
   Legend,
+  Cell,
 } from "recharts";
 
 export default function ProductDashboard() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  // Sync state with URL search params (defaults to 'visibility')
   const activeTab = searchParams.get("tab") || "visibility";
 
-  // React Query fetch using your Service Class pattern
+  // React Query fetch
   const {
     data: dashboardData,
     isLoading,
@@ -32,10 +32,23 @@ export default function ProductDashboard() {
   } = useQuery({
     queryKey: ["productDetails", id, activeTab],
     queryFn: () => productService.productDetail(Number(id), activeTab),
-    //@ts-ignore
+    // @ts-ignore
     keepPreviousData: true,
     staleTime: 5000,
   });
+
+  // Keep a local copy of productInfo so the header NEVER flashes or unmounts during transitions
+  const [cachedProductInfo, setCachedProductInfo] = useState<any>(null);
+
+  // Safely extract our dynamic backend payload structures
+  // @ts-ignore
+  const { productInfo, tabData } = dashboardData || {};
+
+  useEffect(() => {
+    if (productInfo) {
+      setCachedProductInfo(productInfo);
+    }
+  }, [productInfo]);
 
   const tabs = [
     { id: "visibility", label: "Visibility" },
@@ -44,16 +57,15 @@ export default function ProductDashboard() {
     { id: "recommendations", label: "Recommendations" },
   ];
 
-  //@ts-ignore
-  const handleTabChange = (tabId) => {
+  const handleTabChange = (tabId: string) => {
     setSearchParams({ tab: tabId });
   };
 
-  if (isLoading && !dashboardData) {
+  // Initial full-page load loader (Only shows if we have absolutely nothing loaded yet)
+  if (isLoading && !cachedProductInfo) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500 font-medium">
-        <span className="animate-spin mr-2">🔄</span> Initializing Dashboard
-        Analytics...
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -63,39 +75,41 @@ export default function ProductDashboard() {
       <div className="min-h-screen bg-slate-50 p-6">
         <div className="p-6 bg-red-50 border border-red-200 text-red-700 rounded-xl shadow-sm">
           ⚠️ <strong>System Error:</strong>{" "}
-          {error.message || "Failed to fetch dashboard data"}
+          {error instanceof Error
+            ? error.message
+            : "Failed to fetch dashboard data"}
         </div>
       </div>
     );
   }
 
-  // Safely extract our dynamic backend payload structures
-  //@ts-ignore
-  const { productInfo, tabData } = dashboardData || {};
+  // Use the cached product info if the current one is resolving in the background
+  const displayProductInfo = cachedProductInfo || productInfo;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans p-6">
-      {/* 1. DYNAMIC HEADER BANNER (Remains visible during tab changes) */}
+      {/* 1. STATIC HEADER BANNER (Perfect state locking) */}
       <header className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4 mb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-xl">
-              {productInfo?.icon || "📦"}
+              {displayProductInfo?.icon || "📦"}
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900">
-                {productInfo?.title}
+                {displayProductInfo?.title}
               </h1>
               <p className="text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1 mt-0.5">
                 <span>
-                  🏢 <strong>{productInfo?.brand}</strong> (
-                  {productInfo?.retailer}, {productInfo?.category})
+                  🏢 <strong>{displayProductInfo?.brand}</strong> (
+                  {displayProductInfo?.retailer}, {displayProductInfo?.category}
+                  )
                 </span>
                 <span>
-                  <strong>SKU:</strong> {productInfo?.sku}
+                  <strong>SKU:</strong> {displayProductInfo?.sku}
                 </span>
                 <span>
-                  <strong>MPN:</strong> {productInfo?.mpn}
+                  <strong>MPN:</strong> {displayProductInfo?.mpn}
                 </span>
               </p>
             </div>
@@ -111,7 +125,7 @@ export default function ProductDashboard() {
               </span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-5xl font-black">
-                  {productInfo?.globalScores?.visibilityScore}
+                  {displayProductInfo?.globalScores?.visibilityScore}
                 </span>
                 <span className="text-sm opacity-80">out of 100</span>
               </div>
@@ -123,7 +137,7 @@ export default function ProductDashboard() {
                   Mention Rate
                 </span>
                 <span className="text-2xl font-bold">
-                  {productInfo?.globalScores?.mentionRate}%
+                  {displayProductInfo?.globalScores?.mentionRate}%
                 </span>
               </div>
 
@@ -132,16 +146,16 @@ export default function ProductDashboard() {
                   Reviews Count
                 </span>
                 <span className="text-2xl font-bold">
-                  {productInfo?.globalScores?.reviewsCount}
+                  {displayProductInfo?.globalScores?.reviewsCount}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* 4 Model Cards */}
+          {/* Model Breakdown Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {/* @ts-ignore */}
-            {productInfo?.engineBreakdown?.map((engine) => (
+            {displayProductInfo?.engineBreakdown?.map((engine) => (
               <div
                 key={engine.name}
                 className="bg-slate-100/70 border border-slate-200/60 rounded-xl p-3 text-center flex flex-col justify-center"
@@ -177,29 +191,28 @@ export default function ProductDashboard() {
 
       {/* 3. DYNAMIC WORKSPACE COMPONENT PANEL */}
       <main className="min-h-[350px]">
-        {isLoading ? (
-          /* CSS-based circular loader inside the tab space */
-          <div className="flex flex-col items-center justify-center py-24 bg-white rounded-xl border border-slate-200 shadow-sm gap-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
-            <span className="text-sm font-medium text-slate-400">
-              Fetching insights...
-            </span>
-          </div>
-        ) : (
-          <div>
-            {activeTab === "visibility" && (
-              <VisibilityTabContent data={tabData} />
-            )}
-            {activeTab === "competitor" && (
-              <CompetitorTabContent data={tabData} />
-            )}
-            {activeTab === "citation" && <CitationTabContent data={tabData} />}
-            {activeTab === "recommendations" && (
-              <RecommendationsTabContent data={tabData} />
-            )}
-          </div>
+        {activeTab === "visibility" && (
+          <VisibilityTabContent data={tabData} isLoading={isLoading} />
+        )}
+        {activeTab === "competitor" && (
+          <CompetitorTabContent data={tabData} isLoading={isLoading} />
+        )}
+        {activeTab === "citation" && (
+          <CitationTabContent data={tabData} isLoading={isLoading} />
+        )}
+        {activeTab === "recommendations" && (
+          <RecommendationsTabContent data={tabData} isLoading={isLoading} />
         )}
       </main>
+    </div>
+  );
+}
+
+// Clean text-free loading circle
+function TabSpinnerFallback() {
+  return (
+    <div className="w-full min-h-[350px] bg-white border border-slate-200 rounded-xl shadow-sm flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
     </div>
   );
 }
@@ -207,9 +220,14 @@ export default function ProductDashboard() {
 /* ==========================================
    TAB PANEL: VISIBILITY (PAGE 1)
    ========================================== */
-//@ts-ignore
-function VisibilityTabContent({ data }) {
+interface VisibilityProps {
+  data: any;
+  isLoading: boolean;
+}
+function VisibilityTabContent({ data, isLoading }: VisibilityProps) {
+  if (isLoading) return <TabSpinnerFallback />;
   if (!data) return null;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
@@ -237,12 +255,8 @@ function VisibilityTabContent({ data }) {
               />
               <Tooltip cursor={{ fill: "#f8fafc" }} />
               <Bar dataKey="score" radius={[0, 4, 4, 0]} barSize={24}>
-                {//@ts-ignore
-                data.chartData?.map((entry, index) => (
-                  <circle
-                    key={`cell-${index}`}
-                    fill={entry.color || "#3b82f6"}
-                  />
+                {data.chartData?.map((entry: any, index: number) => (
+                  <Cell key={`cell-${index}`} fill={entry.color || "#3b82f6"} />
                 ))}
               </Bar>
             </BarChart>
@@ -297,12 +311,15 @@ function VisibilityTabContent({ data }) {
 /* ==========================================
    TAB PANEL: COMPETITOR ASSESSMENT MATRIX
    ========================================== */
-//@ts-ignore
-function CompetitorTabContent({ data }) {
+interface CompetitorProps {
+  data: any;
+  isLoading: boolean;
+}
+function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
+  if (isLoading) return <TabSpinnerFallback />;
   if (!data) return null;
 
-  //@ts-ignore
-  const getBadgeStyle = (score) => {
+  const getBadgeStyle = (score: number) => {
     if (score >= 75) return "bg-emerald-500 text-white";
     if (score >= 60) return "bg-amber-500 text-white";
     return "bg-rose-500 text-white";
@@ -326,8 +343,7 @@ function CompetitorTabContent({ data }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-sm">
-            {//@ts-ignore
-            data.competitors?.map((row, idx) => (
+            {data.competitors?.map((row: any, idx: number) => (
               <tr
                 key={idx}
                 className={
@@ -434,7 +450,6 @@ function CompetitorTabContent({ data }) {
             <span className="font-medium text-slate-700">
               Reviews Metric Analysis:
             </span>
-
             <span className="text-amber-600 font-semibold">
               {data.radarSummaryText}
             </span>
@@ -452,15 +467,13 @@ function CompetitorTabContent({ data }) {
                   Optimization elements breakdown
                 </span>
               </div>
-
               <span className="bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded border border-rose-200">
                 ⚠️ {data.priorityCountText || "Gaps Found"}
               </span>
             </div>
 
             <div className="space-y-3 text-xs">
-              {//@ts-ignore
-              data.gaps?.map((item, index) => (
+              {data.gaps?.map((item: any, index: number) => (
                 <div
                   key={index}
                   className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200"
@@ -469,7 +482,6 @@ function CompetitorTabContent({ data }) {
                     <span className="font-semibold text-slate-800">
                       {item.title}
                     </span>
-
                     <span
                       className={
                         item.status === "High"
@@ -485,14 +497,12 @@ function CompetitorTabContent({ data }) {
                     <span className="text-[10px] text-slate-500 w-12">
                       You: {item.you}
                     </span>
-
                     <div className="flex-1 bg-slate-200 h-2 rounded-full overflow-hidden">
                       <div
                         className="bg-emerald-500 h-2 rounded-full"
                         style={{ width: `${item.you}%` }}
                       />
                     </div>
-
                     <span className="text-[10px] text-slate-500 w-12 text-right">
                       Top: {item.top}
                     </span>
@@ -510,9 +520,14 @@ function CompetitorTabContent({ data }) {
 /* ==========================================
    TAB PANEL: CITATION INTEL
    ========================================== */
-//@ts-ignore
-function CitationTabContent({ data }) {
+interface CitationProps {
+  data: any;
+  isLoading: boolean;
+}
+function CitationTabContent({ data, isLoading }: CitationProps) {
+  if (isLoading) return <TabSpinnerFallback />;
   if (!data) return null;
+
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm overflow-x-auto">
       <h3 className="text-base font-bold text-slate-900 mb-4">
@@ -525,12 +540,10 @@ function CitationTabContent({ data }) {
             <th className="py-3 px-4">Authority</th>
             <th className="py-3 px-4">Your Mentions</th>
             <th className="py-3 px-4">Competitor Mentions</th>
-            {/* <th className="py-3 px-4 text-right">Gap</th> */}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 text-sm">
-          {//@ts-ignore
-          data.citations?.map((item, idx) => (
+          {data.citations?.map((item: any, idx: number) => (
             <tr key={idx} className="hover:bg-slate-50/50">
               <td className="py-3.5 px-4 font-semibold text-slate-800">
                 {item.source}
@@ -540,17 +553,6 @@ function CitationTabContent({ data }) {
                 {item.you}
               </td>
               <td className="py-3.5 px-4 text-slate-600">{item.competitor}</td>
-              {/* <td className="py-3.5 px-4 text-right">
-                <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded ${
-                    item.gap >= 0
-                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                      : "bg-rose-50 text-rose-700 border border-rose-200"
-                  }`}
-                >
-                  {item.gap >= 0 ? `+${item.gap}` : item.gap}
-                </span>
-              </td> */}
             </tr>
           ))}
         </tbody>
@@ -562,12 +564,42 @@ function CitationTabContent({ data }) {
 /* ==========================================
    TAB PANEL: PRIORITIZED RECOMMENDATIONS
    ========================================== */
-//@ts-ignore
-function RecommendationsTabContent({ data }) {
-  if (!data) return null;
+interface Competitor {
+  competitor_name: string;
+  no_of_faq?: number;
+  word_count?: number;
+  keywords_used?: string[];
+  no_of_reviews?: number;
+  product_title?: string;
+  assets_present?: {
+    images: boolean;
+    videos: boolean;
+  };
+  no_of_features?: number;
+  no_of_attributes?: number;
+}
 
-  //@ts-ignore
-  const getActionColor = (type) => {
+interface ActionItem {
+  type: string;
+  effort: string;
+  title: string;
+  model: string;
+  competitors: Competitor[];
+  impact: number;
+}
+
+interface RecommendationsProps {
+  data: {
+    actions?: ActionItem[];
+  };
+  isLoading: boolean;
+}
+
+function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
+  if (isLoading) return <TabSpinnerFallback />;
+  if (!data || !data.actions) return null; // Safe guard if actions is missing
+
+  const getActionColor = (type: string) => {
     switch (type) {
       case "gap":
         return "bg-orange-500";
@@ -586,50 +618,72 @@ function RecommendationsTabContent({ data }) {
         Improvement Recommendations
       </h3>
       <div className="space-y-4">
-        {//@ts-ignore
-        data.actions?.map((item, index) => (
-          <div
-            key={index}
-            className="border border-slate-100 rounded-xl p-4 hover:border-slate-200 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
-          >
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={`text-[10px] font-bold text-white uppercase px-2 py-0.5 rounded tracking-wide ${getActionColor(item.type)}`}
-                >
-                  {item.type}
-                </span>
-                <span className="bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded capitalize">
-                  {item.effort}
-                </span>
-              </div>
-              <h4 className="text-sm font-bold text-slate-900">{item.title}</h4>
-              <p className="text-xs text-slate-400">
-                Competitors:{" "}
-                <strong className="text-slate-600">{item.competitors}</strong>
-              </p>
-            </div>
+        {data.actions.map((item: ActionItem, index: number) => {
+          // 1. SAFE PARSING: Fallback safely if competitors array is empty or undefined
+          const competitorsString =
+            Array.isArray(item.competitors) && item.competitors.length > 0
+              ? item.competitors.map((c) => c.competitor_name).join(", ")
+              : "";
 
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <span className="text-[10px] text-slate-400 block font-medium">
-                  Impact
-                </span>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <div className="w-24 bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full"
-                      style={{ width: `${item.impact}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-sm font-black text-slate-700">
-                    {item.impact}
+          console.log("competitorsString", competitorsString)
+
+          return (
+            <div
+              key={index}
+              className="border border-slate-100 rounded-xl p-4 hover:border-slate-200 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
+            >
+              {/* 2. CSS FIX: Adding 'flex-1' and 'min-w-0' prevents parent flexbox from squishing this text wrapper to 0px */}
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`text-[10px] font-bold text-white uppercase px-2 py-0.5 rounded tracking-wide ${getActionColor(item.type)}`}
+                  >
+                    {item.type}
                   </span>
+                  <span className="bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded capitalize">
+                    {item.effort}
+                  </span>
+                  {item.model && (
+                    <span className="bg-purple-50 text-purple-600 border border-purple-100 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                      {item.model.replace("LLMModels.", "")}
+                    </span>
+                  )}
+                </div>
+
+                {/* 3. TEXT WRAP: Ensure text wraps normally instead of getting cut off */}
+                <h4 className="text-sm font-bold text-slate-900 break-words">
+                  {item.title}
+                </h4>
+
+                <p className="text-xs text-slate-400 break-words">
+                  Competitors:{" "}
+                  <strong className="text-slate-600">
+                    {competitorsString}
+                  </strong>
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4 shrink-0">
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 block font-medium">
+                    Impact
+                  </span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <div className="w-24 bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${item.impact}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-black text-slate-700">
+                      {item.impact}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
