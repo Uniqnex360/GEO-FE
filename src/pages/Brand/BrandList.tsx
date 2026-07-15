@@ -7,8 +7,7 @@ import { useSelector } from "react-redux";
 import { selectGlobalProjectId } from "../../store/projectSlice";
 
 import AppTable from "../../components/Common/AppTable";
-import AppDrawer from "../../components/Common/AppDrawer";
-import AppHeader from "../../components/Common/AppHeader";
+import AppModal from "../../components/Common/AppModel";
 
 import BrandHeader from "./BrandHeader";
 import BrandForm from "./BrandForm";
@@ -247,7 +246,8 @@ export default function Brand() {
       render: (_: unknown, row: Brand) => (
         <div className="flex items-center justify-end gap-3">
           <a
-            href={`/brands/${row.id}`}
+            // href={`/brands/${row.id}`}
+            href=""
             className="text-cyan-400 hover:text-cyan-300 text-sm"
           >
             Open
@@ -283,7 +283,7 @@ export default function Brand() {
 
   return (
     <>
-      <AppHeader searchValue="" onSearchChange={() => {}} />
+      {/* <AppHeader searchValue="" onSearchChange={() => {}} /> */}
 
       <BrandHeader
         onCreate={() => {
@@ -297,7 +297,7 @@ export default function Brand() {
         <AppTable columns={columns} data={brands} isLoading={isLoading} />
       </div>
 
-      <AppDrawer
+      <AppModal
         title={isUpdate ? "Update Brand" : "Create Brand"}
         isOpen={drawer}
         onClose={() => setDrawer(false)}
@@ -308,7 +308,7 @@ export default function Brand() {
           loading={createMutation.isPending || updateMutation.isPending}
           onSubmit={handleSubmit}
         />
-      </AppDrawer>
+      </AppModal>
 
       <BrandDelete
         open={deleteModal}

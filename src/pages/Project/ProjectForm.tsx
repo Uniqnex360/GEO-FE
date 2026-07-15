@@ -26,24 +26,76 @@ interface SelectOption {
 
 const IndustryMeta: SelectOption[] = [
   {
-    id: "technology",
-    value: "Technology",
+    id: "automotive_supplies",
+    value: "Automotive Supplies",
   },
   {
-    id: "healthcare",
-    value: "Healthcare",
+    id: "building_supplies",
+    value: "Building Supplies",
   },
   {
-    id: "finance",
-    value: "Finance",
+    id: "cleaning_supplies",
+    value: "Cleaning Supplies",
   },
   {
-    id: "education",
-    value: "Education",
+    id: "electrical_supplies",
+    value: "Electrical Supplies",
   },
   {
-    id: "retail",
-    value: "Retail",
+    id: "electronic_supplies",
+    value: "Electronic Supplies",
+  },
+  {
+    id: "hardware_supplies",
+    value: "Hardware Supplies",
+  },
+  {
+    id: "heating_and_cooling_supplies",
+    value: "Heating and Cooling Supplies",
+  },
+  {
+    id: "home_improvement_supplies",
+    value: "Home Improvement Supplies",
+  },
+  {
+    id: "industrial_supplies",
+    value: "Industrial Supplies",
+  },
+  {
+    id: "lawn_and_garden_supplies",
+    value: "Lawn and Garden Supplies",
+  },
+  {
+    id: "machinery_supplies",
+    value: "Machinery Supplies",
+  },
+  {
+    id: "material_handling_supplies",
+    value: "Material Handling Supplies",
+  },
+  {
+    id: "medical_supplies",
+    value: "Medical Supplies",
+  },
+  {
+    id: "office_supplies",
+    value: "Office Supplies",
+  },
+  {
+    id: "packaging_supplies",
+    value: "Packaging Supplies",
+  },
+  {
+    id: "safety_supplies",
+    value: "Safety Supplies",
+  },
+  {
+    id: "tools_and_equipment_supplies",
+    value: "Tools and Equipment Supplies",
+  },
+  {
+    id: "pet_supplies",
+    value: "Pet Supplies",
   },
 ];
 
@@ -102,10 +154,9 @@ const ProjectForm = ({ initialData, isUpdate, loading, onSubmit }: Props) => {
           label="Industry"
           name="industry"
           type="select"
-          placeholder="Marine"
           register={register}
           //@ts-ignore
-          control={control} // <-- ADD THIS LINE HERE
+          control={control}
           rules={{ required: "Industry is required" }}
           error={errors.industry}
           formState={formState}

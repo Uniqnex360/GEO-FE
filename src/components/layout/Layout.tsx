@@ -36,9 +36,9 @@ export interface Project {
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: FiHome },
-  { to: "/admin/project", label: "Project", icon: FiPackage },
-  { to: "/admin/brand", label: "Brand", icon: FiBriefcase },
-  { to: "/admin/product", label: "Product", icon: FiPackage },
+  { to: "/admin/project", label: "Projects", icon: FiPackage },
+  { to: "/admin/brand", label: "Brands", icon: FiBriefcase },
+  { to: "/admin/product", label: "Products", icon: FiPackage },
   { to: "/admin/chat", label: "Chat", icon: FiFileText },
   { to: "/admin/ai-engine", label: "AI Engine", icon: FiActivity },
   { to: "/admin/citation", label: "Citation", icon: FiBarChart2 },

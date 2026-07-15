@@ -319,14 +319,13 @@ export default function Product() {
       label: "ACTIONS",
       render: (_: unknown, row: ProductType) => (
         <div className="flex items-center justify-end gap-2 text-slate-400">
-          <button
-            onClick={() => {
-              /* View logic */
-            }}
+          {/* Changed button to Link for product page navigation */}
+          <Link
+            to={`/admin/product/${row.id}`}
             className="p-1 hover:text-cyan-600 transition-colors"
           >
             <Eye className="h-4 w-4" />
-          </button>
+          </Link>
           <button
             onClick={() => handleEdit(row)}
             className="p-1 hover:text-slate-600 transition-colors"
@@ -350,7 +349,7 @@ export default function Product() {
     return <div className="p-8 text-red-500">Failed to load products.</div>;
   }
 
-  const stats = data?.tenant_states
+  const stats = data?.tenant_states;
 
   return (
     <>

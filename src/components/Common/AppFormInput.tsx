@@ -288,36 +288,50 @@ const AppFormInput = <T extends FieldValues>({
         />
       )}
 
-      {/* SINGLE SELECT (Uses the imported AppRemoteSelect component directly) */}
-      {type === "select" && control && (
-        <Controller
-          name={name}
-          control={control}
-          rules={rules}
-          render={({ field: { onChange, value } }) => {
-            // 💡 1. Convert the plain form string into the object format AppRemoteSelect expects
-            const objectValue = value
-              ? { id: value, value: String(value) }
-              : null;
+      {/* SINGLE SELECT (Handles both Remote and Static options) */}
+      {type === "select" &&
+        (fetchFn && activeControl ? (
+          <Controller
+            name={name}
+            control={activeControl}
+            rules={rules}
+            render={({ field: { onChange, value } }) => {
+              const objectValue = value
+                ? { id: value, value: String(value) }
+                : null;
 
-            return (
-              <AppRemoteSelect
-                value={objectValue}
-                onChange={(selectedOption) => {
-                  // 💡 2. Send back just the raw ID string to your React Hook Form state
-                  onChange(selectedOption ? selectedOption.id : "");
-                }}
-                fetchFn={fetchFn}
-                queryKey={queryKey}
-                limit={limit}
-                placeholder={placeholder}
-              />
-            );
-          }}
-        />
-      )}
+              return (
+                <AppRemoteSelect
+                  value={objectValue}
+                  onChange={(selectedOption) => {
+                    onChange(selectedOption ? selectedOption.id : "");
+                  }}
+                  fetchFn={fetchFn}
+                  queryKey={queryKey}
+                  limit={limit}
+                  placeholder={placeholder}
+                />
+              );
+            }}
+          />
+        ) : (
+          <select
+            disabled={disabled}
+            {...register(name, rules)}
+            className={inputClass}
+          >
+            <option value="" disabled hidden>
+              {placeholder || `Select ${label}...`}
+            </option>
+            {options.map((option) => (
+              <option key={String(option.id)} value={String(option.id)}>
+                {option.value}
+              </option>
+            ))}
+          </select>
+        ))}
 
-      {/* RE-ENGINEERED INSTANT MULTI-SELECT (UNTOUCHED) */}
+      {/* RE-ENGINEERED INSTANT MULTI-SELECT */}
       {type === "multiselect" && activeControl && (
         <Controller
           name={name}

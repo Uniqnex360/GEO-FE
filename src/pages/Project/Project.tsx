@@ -39,11 +39,13 @@ export interface Project {
   website_url?: string;
   status: "Active" | "Crawling" | "Paused";
   is_active: boolean;
+  industry: string;
   countries?: string[];
   updatedAt: string;
   productsCount: number;
   visibilityScore: number;
   platforms: string[];
+  description: string;
 }
 
 export interface BackendResponse {
@@ -199,11 +201,15 @@ export default function ProjectDashboard() {
   };
 
   const handleEdit = (project: Project, e: React.MouseEvent) => {
+    console.log()
     e.stopPropagation();
+    console.log("updtae project", project)
     setSelectedProject({
       //@ts-ignore
       id: project.id,
       name: project.name,
+      industry: project.industry,
+      description: project.description,
       website_url: project.website_url,
       countries: project.countries,
     });
