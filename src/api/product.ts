@@ -75,6 +75,12 @@ export type ProductCU = Omit<Product, "id"> & { id?: number };
 
 export interface ProductList {
   data: Product[];
+  tenant_states: {
+    total_products: number;
+    avg_visibility_score: number;
+    avg_mention_rate: number;
+    brands_tracked: number;
+  };
   pagination: {
     page: number;
     limit: number;

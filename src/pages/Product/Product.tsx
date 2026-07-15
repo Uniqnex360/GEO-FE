@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import type { AxiosError } from "axios";
-import { Plus, Box , Eye, MoreVertical  } from "lucide-react";
+import { Plus, Box, Eye, MoreVertical } from "lucide-react";
 
 import AppTable from "../../components/Common/AppTable";
 import { AppSearch } from "../../components/Common/AppSearch";
@@ -137,23 +137,6 @@ export default function Product() {
     close?.();
   };
 
-  // ==========================================
-  // React Query Fetch (Listens to Tenant Redux Changes)
-  // ==========================================
-  // const { data, isPending, isError } = useQuery({
-  //   // Adding reduxProjectId here forces an immediate query auto-refresh whenever it mutates
-  //   queryKey: ["products", reduxProjectId, page, searchTerm],
-  //   queryFn: () =>
-  //     productService.getProducts({
-  //       page,
-  //       limit,
-  //       search: searchTerm || undefined,
-  //       tenant_id: reduxProjectId ? Number(reduxProjectId) : undefined, // Passing Tenant ID cleanly
-  //     }),
-  //   enabled: !!reduxProjectId, // Safely avoids executing queries if no tenant context is active
-  //   placeholderData: keepPreviousData,
-  // });
-
   const { data, isPending, isError } = useQuery({
     queryKey: ["products", reduxProjectId, page, searchTerm, selectedBrands],
     queryFn: () =>
@@ -238,7 +221,6 @@ export default function Product() {
   // ==========================================
   // Table Columns Definition
   // ==========================================
-
 
   // Helper function to dynamically determine the progress bar color based on value
   const getVisibilityColor = (value: number) => {
@@ -368,6 +350,8 @@ export default function Product() {
     return <div className="p-8 text-red-500">Failed to load products.</div>;
   }
 
+  const stats = data?.tenant_states
+
   return (
     <>
       <div className="px-6 py-6 flex justify-between items-center  gap-4">
@@ -401,6 +385,48 @@ export default function Product() {
           <Plus size={16} />
           <span className="whitespace-nowrap">New Product</span>
         </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-slate-50">
+        {/* Total Products */}
+        <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm flex flex-col justify-between min-h-[110px]">
+          <span className="text-sm font-medium text-slate-500 tracking-tight">
+            Total Products
+          </span>
+          <span className="text-3xl font-bold text-slate-900 mt-2">
+            {stats?.total_products}
+          </span>
+        </div>
+
+        {/* Avg. Visibility */}
+        <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm flex flex-col justify-between min-h-[110px]">
+          <span className="text-sm font-medium text-slate-500 tracking-tight">
+            Avg. Visibility
+          </span>
+          <span className="text-3xl font-bold text-blue-600 mt-2">
+            {stats?.avg_visibility_score.toFixed(1)}
+          </span>
+        </div>
+
+        {/* Avg. Mention Rate */}
+        <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm flex flex-col justify-between min-h-[110px]">
+          <span className="text-sm font-medium text-slate-500 tracking-tight">
+            Avg. Mention Rate
+          </span>
+          <span className="text-3xl font-bold text-emerald-600 mt-2">
+            {stats?.avg_mention_rate.toFixed(1)}%
+          </span>
+        </div>
+
+        {/* Brands Tracked */}
+        <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm flex flex-col justify-between min-h-[110px]">
+          <span className="text-sm font-medium text-slate-500 tracking-tight">
+            Brands Tracked
+          </span>
+          <span className="text-3xl font-bold text-slate-900 mt-2">
+            {stats?.brands_tracked}
+          </span>
+        </div>
       </div>
 
       <div className="p-8 space-y-6">
