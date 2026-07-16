@@ -338,7 +338,6 @@ function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
               <th className="py-3 px-4">ChatGPT</th>
               <th className="py-3 px-4">Gemini</th>
               <th className="py-3 px-4">Claude</th>
-              <th className="py-3 px-4">Perplexity</th>
               <th className="py-3 px-4 text-right">Avg Score</th>
             </tr>
           </thead>
@@ -372,13 +371,6 @@ function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
                     className={`px-2 py-1 rounded text-xs font-bold ${getBadgeStyle(row.claude)}`}
                   >
                     {row.claude}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4">
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-bold ${getBadgeStyle(row.perplexity)}`}
-                  >
-                    {row.perplexity}
                   </span>
                 </td>
                 <td className="py-3.5 px-4 text-right text-blue-600 font-bold">
@@ -586,6 +578,7 @@ interface ActionItem {
   model: string;
   competitors: Competitor[];
   impact: number;
+  query_optimization_tag: string;
 }
 
 interface RecommendationsProps {
@@ -624,9 +617,6 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
             Array.isArray(item.competitors) && item.competitors.length > 0
               ? item.competitors.map((c) => c.competitor_name).join(", ")
               : "";
-
-          console.log("competitorsString", competitorsString)
-
           return (
             <div
               key={index}
@@ -648,6 +638,9 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
                       {item.model.replace("LLMModels.", "")}
                     </span>
                   )}
+                  <span className="bg-green-50 text-green-600 border border-purple-100 text-[10px] font-bold px-2 py-0.5 rounded">
+                    {item.query_optimization_tag || ""}
+                  </span>
                 </div>
 
                 {/* 3. TEXT WRAP: Ensure text wraps normally instead of getting cut off */}
