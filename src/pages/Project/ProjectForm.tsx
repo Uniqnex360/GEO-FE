@@ -101,6 +101,7 @@ const IndustryMeta: SelectOption[] = [
 
 const CountryMeta: SelectOption[] = [
   { id: "USA", value: "USA" },
+  { id: "IE", value: "Ireland" },
   { id: "UK", value: "UK" },
   { id: "Canada", value: "Canada" },
   { id: "Australia", value: "Australia" },
