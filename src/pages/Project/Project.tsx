@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   useQuery,
   useMutation,
@@ -6,26 +6,20 @@ import {
   keepPreviousData,
 } from "@tanstack/react-query";
 import { useSelector, useDispatch } from "react-redux";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import type { AxiosError } from "axios";
 import { createPortal } from "react-dom";
-import {
-  Plus,
-  Globe,
-  Layers,
-  TrendingUp,
-  Trash2,
-  Edit2,
-  ExternalLink,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { projectService } from "../../api/project";
 import {
   selectGlobalProjectId,
   setGlobalProjectId,
 } from "../../store/projectSlice";
+import { formatSnakeToTitleCase } from "../../helpers/common";
 import AppModal from "../../components/Common/AppModel";
+import AppTable from "../../components/Common/AppTable";
 import ProjectForm, { type ProjectCU } from "./ProjectForm";
 import ProjectDeleteModal from "./ProjectDelete";
 
@@ -60,23 +54,33 @@ export interface BackendResponse {
 
 type ApiError = { message?: string; detail?: string };
 
+const AI_PLATFORMS = [
+  { key: "ChatGPT", label: "CHATGPT" },
+  { key: "Claude", label: "CLAUDE" },
+  { key: "Gemini", label: "GEMINI" },
+];
+
 export default function ProjectDashboard() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const reduxProjectId = useSelector(selectGlobalProjectId);
 
   // --- URL State Initialization via React Router ---
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Extract page and search values from URL, falling back to defaults
+  // Extract page, search, and sorting values from URL, falling back to defaults
   const page = Number(searchParams.get("page")) || 1;
   const searchTerm = searchParams.get("search") || "";
+  const sortBy = searchParams.get("sort_by") || "";
+  const sortOrder =
+    (searchParams.get("sort_order") as "asc" | "desc") || "desc";
   const limit = 24;
 
   // --- Local Search State for Debouncing ---
   const [localSearch, setLocalSearch] = useState(searchTerm);
 
-  // --- Sync State Helpers (Rewritten for explicit URL updates) ---
+  // --- Sync State Helpers ---
   const setPage = (newPage: number) => {
     const params = new URLSearchParams(searchParams);
     params.set("page", String(newPage));
@@ -94,9 +98,37 @@ export default function ProjectDashboard() {
     setSearchParams(params);
   };
 
-  // --- The Missing Input Handler Function Fixed Here ---
   const handleSearchChange = (val: string) => {
     setLocalSearch(val);
+  };
+
+  // --- Sorting Handler ---
+  const handleSort = (key: string) => {
+    // Map table column keys to backend sort parameter names
+    const backendSortKeyMap: Record<string, string> = {
+      name: "name",
+      industry: "industry",
+      productsCount: "products_count",
+    };
+
+    const targetKey = backendSortKeyMap[key] || key;
+    const params = new URLSearchParams(searchParams);
+
+    if (sortBy === targetKey) {
+      if (sortOrder === "asc") {
+        params.set("sort_order", "desc");
+      } else {
+        // Clear sorting when toggled past descending
+        params.delete("sort_by");
+        params.delete("sort_order");
+      }
+    } else {
+      params.set("sort_by", targetKey);
+      params.set("sort_order", "asc");
+    }
+
+    params.set("page", "1"); // Reset to page 1 when sort order changes
+    setSearchParams(params);
   };
 
   // Debounce effect: Updates URL params 300ms after user stops typing
@@ -108,7 +140,7 @@ export default function ProjectDashboard() {
     return () => clearTimeout(handler);
   }, [localSearch]);
 
-  // Sync local search value if the URL search param changes from elsewhere (e.g., browser back button)
+  // Sync local search value if the URL search param changes from elsewhere
   useEffect(() => {
     setLocalSearch(searchTerm);
   }, [searchTerm]);
@@ -119,18 +151,37 @@ export default function ProjectDashboard() {
     isPending,
     isError,
   } = useQuery<BackendResponse, AxiosError<ApiError>>({
-    queryKey: ["projects", page, searchTerm],
+    queryKey: ["projects", page, searchTerm, sortBy, sortOrder],
     queryFn: () =>
       projectService.getList({
         page,
         limit,
         search: searchTerm || undefined,
+        sort_by: sortBy || undefined,
+        sort_order: sortOrder || undefined,
       }),
     placeholderData: keepPreviousData,
   });
 
-  const projects = projectsData?.data || [];
+  const rawProjects = projectsData?.data || [];
   const paginationData = projectsData?.pagination;
+
+  // Client-side strict prefix search filter (matches only if name starts with query)
+  const projects = useMemo(() => {
+    if (!localSearch.trim()) return rawProjects;
+    const query = localSearch.toLowerCase().trim();
+    return rawProjects.filter((project) =>
+      project.name?.toLowerCase().startsWith(query),
+    );
+  }, [rawProjects, localSearch]);
+
+  // Reverse mapping from backend query key to column key in AppTable
+  const activeSortKeyMap: Record<string, string> = {
+    name: "name",
+    industry: "industry",
+    products_count: "productsCount",
+  };
+  const activeTableSortKey = activeSortKeyMap[sortBy] || sortBy;
 
   // Dialog & Selection States
   const [drawer, setDrawer] = useState(false);
@@ -200,10 +251,8 @@ export default function ProjectDashboard() {
     }
   };
 
-  const handleEdit = (project: Project, e: React.MouseEvent) => {
-    console.log()
-    e.stopPropagation();
-    console.log("updtae project", project)
+  const handleEdit = (project: Project, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setSelectedProject({
       //@ts-ignore
       id: project.id,
@@ -217,24 +266,131 @@ export default function ProjectDashboard() {
     setDrawer(true);
   };
 
-  const handleDeleteTrigger = (id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeleteTrigger = (id: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setDeleteId(id);
     setDeleteModal(true);
   };
 
-  const getStatusStyle = (status: Project["status"]) => {
-    switch (status) {
-      case "Active":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200";
-      case "Crawling":
-        return "bg-amber-50 text-amber-700 border-amber-200";
-      case "Paused":
-        return "bg-slate-100 text-slate-600 border-slate-200";
-      default:
-        return "bg-gray-50 text-gray-600 border-gray-200";
-    }
-  };
+  // =========================
+  // Table Columns Definition
+  // =========================
+  const columns = [
+    {
+      key: "name",
+      label: "PROJECT",
+      sortable: true,
+      render: (value: string, row: Project) => {
+        const projectName = value || "Unnamed Project";
+        const url = row?.website_url || "";
+        const isSelected = reduxProjectId === row.id;
+
+
+
+        return (
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => dispatch(setGlobalProjectId(row.id))}
+          >
+
+            <div className="flex flex-col">
+              <span className="font-semibold text-slate-900 flex items-center gap-1.5">
+                {projectName}
+                {isSelected && (
+                  <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.2 rounded">
+                    Active
+                  </span>
+                )}
+              </span>
+              {url && <span className="text-xs text-slate-400">{url}</span>}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: "industry",
+      label: "INDUSTRY",
+      sortable: true,
+      render: (value: string) => (
+        <span className="text-slate-900 font-medium">
+          {formatSnakeToTitleCase(value) || "-"}
+        </span>
+      ),
+    },
+    {
+      key: "productsCount",
+      label: "PRODUCTS",
+      sortable: true,
+      render: (value: number) => (
+        <span className="text-slate-900 font-semibold">
+          {(value ?? 0).toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      key: "countries",
+      label: "COUNTRY",
+      render: (value: string[] | string) => {
+        const displayValue = Array.isArray(value) ? value.join(", ") : value;
+        return <span className="text-slate-900">{displayValue || "-"}</span>;
+      },
+    },
+    // Dynamic AI Platform Checkmark Columns
+    ...AI_PLATFORMS.map((platform) => ({
+      key: platform.key,
+      label: platform.label,
+      render: (_: unknown, row: Project) => {
+        const supportedPlatforms = row?.platforms || ["ChatGPT", "Claude"];
+        const isSupported = supportedPlatforms.some(
+          (p) => p.toLowerCase() === platform.key.toLowerCase(),
+        );
+
+        return (
+          <div className="text-center">
+            {isSupported ? (
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-600 font-bold text-xs">
+                ✓
+              </span>
+            ) : (
+              <span className="text-slate-300">-</span>
+            )}
+          </div>
+        );
+      },
+    })),
+
+    {
+      key: "actions",
+      label: "ACTIONS",
+      render: (_: unknown, row: Project) => (
+        <div className="flex items-center justify-end gap-3">
+          <button
+            onClick={() => {
+              dispatch(setGlobalProjectId(row.id));
+
+              navigate(`/admin`);
+            }}
+            className="text-emerald-600 hover:text-emerald-700 text-sm font-semibold cursor-pointer"
+          >
+            Dashboard
+          </button>
+          <button
+            onClick={(e) => handleEdit(row, e)}
+            className="text-amber-600 hover:text-amber-700 text-sm font-semibold cursor-pointer"
+          >
+            Edit
+          </button>
+          <button
+            onClick={(e) => handleDeleteTrigger(row.id, e)}
+            className="text-red-600 hover:text-red-700 text-sm font-semibold cursor-pointer"
+          >
+            Delete
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   const headerActionsContainer = document.getElementById(
     "layout-actions-portal",
@@ -263,152 +419,35 @@ export default function ProjectDashboard() {
         )}
 
       {/* REUSABLE SEARCH INPUT */}
-      <AppSearch
-        value={localSearch}
-        onChange={(val) => handleSearchChange(val)}
-        placeholder="Search projects..."
-      />
-
-      {/* Main Responsive Grid List view */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-        {projects.map((project) => {
-          const isSelected = reduxProjectId === project.id;
-          const initials = (project.name || "PR")
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase();
-
-          return (
-            <div
-              key={project.id}
-              onClick={() => dispatch(setGlobalProjectId(project.id))}
-              className={`bg-white border rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all relative group/card cursor-pointer ${
-                isSelected
-                  ? "border-emerald-500 ring-2 ring-emerald-500/10 bg-emerald-50/5"
-                  : "border-slate-200/80 hover:border-slate-300"
-              }`}
-            >
-              <div>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900 text-[11px] font-extrabold text-slate-200 border border-slate-800">
-                      {initials}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-slate-900 text-base leading-tight tracking-tight group-hover/card:text-emerald-600 transition-colors">
-                        {project.name}
-                      </h3>
-                      <span className="text-xs text-slate-400 font-medium flex items-center gap-1 mt-0.5">
-                        <Globe className="w-3 h-3 text-slate-300" />{" "}
-                        {project.website_url || "No Website"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 opacity-40 group-hover/card:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => handleEdit(project, e)}
-                      className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={(e) => handleDeleteTrigger(project.id, e)}
-                      className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 mb-5">
-                  <span
-                    className={`text-[11px] font-bold tracking-wide px-2.5 py-0.5 rounded-full border ${getStatusStyle(
-                      project.status,
-                    )} flex items-center gap-1.5`}
-                  >
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        project.status === "Active"
-                          ? "bg-emerald-500"
-                          : project.status === "Crawling"
-                            ? "bg-amber-500"
-                            : "bg-slate-400"
-                      }`}
-                    />
-                    {project.is_active ? "Active" : "Inactive"}
-                  </span>
-                  <span className="text-xs text-slate-400 font-medium">
-                    {project.countries?.join(", ") || "-"} · updated{" "}
-                    {project.updatedAt || "just now"}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 border-t border-b border-slate-100 py-3.5 mb-5">
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider">
-                      <Layers className="w-3 h-3 text-slate-300" /> Products
-                    </span>
-                    <p className="text-xl font-extrabold text-slate-900 mt-0.5">
-                      {(project.productsCount ?? 0).toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider">
-                      <TrendingUp className="w-3 h-3 text-slate-300" />{" "}
-                      Visibility
-                    </span>
-                    <p className="text-xl font-extrabold text-slate-900 mt-0.5">
-                      {project.visibilityScore ?? 0}
-                      <span className="text-xs text-slate-400 font-normal">
-                        /100
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                  Monitored AI Platforms
-                </span>
-                <div className="flex flex-wrap gap-1.5 mb-5">
-                  {(project.platforms || ["ChatGPT", "Claude"]).map(
-                    (platform, idx) => (
-                      <span
-                        key={idx}
-                        className="bg-slate-50 text-slate-700 border border-slate-200/60 text-xs font-semibold px-2.5 py-0.5 rounded-lg"
-                      >
-                        {platform}
-                      </span>
-                    ),
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button className="w-full border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl transition-colors flex items-center justify-center gap-1.5">
-                    Dashboard <ExternalLink className="w-3 h-3" />
-                  </button>
-                  <button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-sm transition-colors text-center">
-                    Products ({project.productsCount ?? 0})
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      <div className="mb-6">
+        <AppSearch
+          value={localSearch}
+          onChange={(val) => handleSearchChange(val)}
+          placeholder="Search projects..."
+        />
       </div>
+
+      {/* MAIN TABLE VIEW */}
+        <AppTable
+          columns={columns}
+          data={projects}
+          isLoading={isPending}
+          sortKey={activeTableSortKey}
+          sortDirection={sortOrder}
+          onSort={handleSort}
+        />
+
 
       {/* REUSABLE PAGINATION FOOTER */}
       {paginationData && (
-        <AppPagination
-          currentPage={page}
-          totalPages={paginationData.total_pages}
-          totalEntries={paginationData.total}
-          onPageChange={setPage}
-        />
+        <div className="mt-6">
+          <AppPagination
+            currentPage={page}
+            totalPages={paginationData.total_pages}
+            totalEntries={paginationData.total}
+            onPageChange={setPage}
+          />
+        </div>
       )}
 
       <AppModal

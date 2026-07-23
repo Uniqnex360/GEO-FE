@@ -39,8 +39,15 @@ export type AppMetaList = {
 
 class BrandService {
   // Modified to take tenant_id (and potential pagination/filters) as a query parameter
-  async getBrands(params?: { tenant_id?: number }): Promise<BrandList> {
-    const res = await api.get<BrandList>(ENDPOINTS.BRAND_LIST, { params });
+  async getBrands(params?: {
+    tenant_id?: number;
+    page?: number;
+    limit?: number;
+    search?: string;
+    sort_by?: string;
+    sort_order?: "asc" | "desc";
+  }): Promise<BrandList> {
+    const res = await api.get(ENDPOINTS.BRAND_LIST, { params });
     return res.data;
   }
 

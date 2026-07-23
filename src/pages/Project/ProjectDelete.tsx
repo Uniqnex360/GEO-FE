@@ -25,7 +25,7 @@ export default function ProjectDeleteModal({
             Cancel
           </button>
 
-          <button onClick={onDelete} className="flex-1 bg-red-600 p-2 rounded">
+          <button onClick={onDelete} className="flex-1 bg-red-600 p-2 rounded text-white">
             {loading ? "Deleting..." : "Delete"}
           </button>
         </div>

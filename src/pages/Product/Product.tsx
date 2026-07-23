@@ -52,7 +52,8 @@ export default function Product() {
 
   // --- URL Param Synchronization ---
   const [searchParams, setSearchParams] = useSearchParams();
-  const page = Number(searchParams.get("page")) || 1;
+  const rawPage = Number(searchParams.get("page"));
+  const page = !isNaN(rawPage) && rawPage > 0 ? rawPage : 1;
   const searchTerm = searchParams.get("search") || "";
   const limit = 24;
   const brandParam = searchParams.get("brand") || "";
@@ -353,7 +354,7 @@ export default function Product() {
 
   return (
     <>
-      <div className="px-6 py-6 flex justify-between items-center  gap-4">
+      <div className="px-1 py-1 flex justify-between items-center  gap-4">
         <div className="flex items-center gap-3 flex-1">
           <div className="w-full max-w-md">
             <AppSearch
@@ -379,14 +380,14 @@ export default function Product() {
             setIsUpdate(false);
             setDrawer(true);
           }}
-          className="bg-cyan-400 hover:bg-cyan-500 text-black px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 shrink-0"
+          className="bg-cyan-400 hover:bg-cyan-500 text-black px-1 py-2 rounded-lg flex items-center gap-2 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 shrink-0"
         >
           <Plus size={16} />
           <span className="whitespace-nowrap">New Product</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-slate-50">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-2 bg-slate-50">
         {/* Total Products */}
         <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm flex flex-col justify-between min-h-[110px]">
           <span className="text-sm font-medium text-slate-500 tracking-tight">
@@ -428,7 +429,7 @@ export default function Product() {
         </div>
       </div>
 
-      <div className="p-8 space-y-6">
+      <div className="p-2 space-y-3">
         {/* REUSABLE SEARCH INPUT */}
 
         {/* DATA TABLE VIEW */}

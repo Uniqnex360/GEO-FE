@@ -95,9 +95,9 @@ export default function AppTable({
           className="
             overflow-y-auto
             scrollbar-thin
-            scrollbar-thumb-gray-700
-            scrollbar-track-gray-900
-            hover:scrollbar-thumb-gray-600
+            scrollbar-thumb-gray-200
+           
+            hover:scrollbar-thumb-gray-400
           "
         >
           <table className="w-full min-w-max border-collapse">
@@ -115,7 +115,7 @@ export default function AppTable({
                         className="flex items-center gap-3 text-slate-900 hover:text-slate-700 transition-colors w-full"
                       >
                         <span className="truncate">{column.label}</span>
-                        <span className="shrink-0">
+                        <span className="shrink-0 cursor-pointer">
                           {sortKey === column.key ? (
                             sortDirection === "asc" ? (
                               <FiChevronUp
