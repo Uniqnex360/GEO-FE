@@ -10,7 +10,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import type { AxiosError } from "axios";
 import { createPortal } from "react-dom";
-import { Plus } from "lucide-react";
+import { Plus, LayoutDashboard, SquarePen, Trash2 } from "lucide-react";
 
 import { projectService } from "../../api/project";
 import {
@@ -285,14 +285,11 @@ export default function ProjectDashboard() {
         const url = row?.website_url || "";
         const isSelected = reduxProjectId === row.id;
 
-
-
         return (
           <div
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => dispatch(setGlobalProjectId(row.id))}
           >
-
             <div className="flex flex-col">
               <span className="font-semibold text-slate-900 flex items-center gap-1.5">
                 {projectName}
@@ -364,28 +361,28 @@ export default function ProjectDashboard() {
       key: "actions",
       label: "ACTIONS",
       render: (_: unknown, row: Project) => (
-        <div className="flex items-center justify-end gap-3">
+        <div className="flex items-center  gap-3">
           <button
             onClick={() => {
               dispatch(setGlobalProjectId(row.id));
 
               navigate(`/admin`);
             }}
-            className="text-emerald-600 hover:text-emerald-700 text-sm font-semibold cursor-pointer"
+            className="text-emerald-600 hover:text-emerald-700 text-xs  cursor-pointer"
           >
-            Dashboard
+            <LayoutDashboard size={16} />
           </button>
           <button
             onClick={(e) => handleEdit(row, e)}
             className="text-amber-600 hover:text-amber-700 text-sm font-semibold cursor-pointer"
           >
-            Edit
+            <SquarePen size={16} />
           </button>
           <button
             onClick={(e) => handleDeleteTrigger(row.id, e)}
             className="text-red-600 hover:text-red-700 text-sm font-semibold cursor-pointer"
           >
-            Delete
+            <Trash2 size={16} />
           </button>
         </div>
       ),
@@ -419,24 +416,25 @@ export default function ProjectDashboard() {
         )}
 
       {/* REUSABLE SEARCH INPUT */}
-      <div className="mb-6">
-        <AppSearch
-          value={localSearch}
-          onChange={(val) => handleSearchChange(val)}
-          placeholder="Search projects..."
-        />
+      <div className="mb-6 flex">
+        <div className="w-1/2 ml-auto">
+          <AppSearch
+            value={localSearch}
+            onChange={(val) => handleSearchChange(val)}
+            placeholder="Search projects..."
+          />
+        </div>
       </div>
 
       {/* MAIN TABLE VIEW */}
-        <AppTable
-          columns={columns}
-          data={projects}
-          isLoading={isPending}
-          sortKey={activeTableSortKey}
-          sortDirection={sortOrder}
-          onSort={handleSort}
-        />
-
+      <AppTable
+        columns={columns}
+        data={projects}
+        isLoading={isPending}
+        sortKey={activeTableSortKey}
+        sortDirection={sortOrder}
+        onSort={handleSort}
+      />
 
       {/* REUSABLE PAGINATION FOOTER */}
       {paginationData && (

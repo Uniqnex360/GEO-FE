@@ -9,7 +9,8 @@ import {
 } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import type { AxiosError } from "axios";
-import { Plus, Box, Eye, MoreVertical } from "lucide-react";
+import { Plus, Eye, SquarePen } from "lucide-react";
+import { createPortal } from "react-dom";
 
 import AppTable from "../../components/Common/AppTable";
 import { AppSearch } from "../../components/Common/AppSearch";
@@ -61,6 +62,18 @@ export default function Product() {
     ? brandParam.split(",").filter(Boolean)
     : [];
 
+  const sortBy = searchParams.get("sort_by") || "";
+  const sortOrder =
+    (searchParams.get("sort_order") as "asc" | "desc") || "desc";
+
+  const activeSortKeyMap: Record<string, string> = {
+    name: "name",
+    sku: "sku",
+    brand_name: "brand",
+    visibility_rate: "visibility",
+  };
+  const activeTableSortKey = activeSortKeyMap[sortBy] || sortBy;
+
   const setBrandFilter = (brands: string[]) => {
     const params = new URLSearchParams(searchParams);
 
@@ -76,6 +89,10 @@ export default function Product() {
 
   // --- Local Search Input Debouncing State ---
   const [localSearch, setLocalSearch] = useState(searchTerm);
+
+  const headerActionsContainer = document.getElementById(
+    "layout-actions-portal",
+  );
 
   // --- Synced State Modifiers ---
   const setPage = (newPage: number) => {
@@ -139,7 +156,15 @@ export default function Product() {
   };
 
   const { data, isPending, isError } = useQuery({
-    queryKey: ["products", reduxProjectId, page, searchTerm, selectedBrands],
+    queryKey: [
+      "products",
+      reduxProjectId,
+      page,
+      searchTerm,
+      selectedBrands,
+      sortBy,
+      sortOrder,
+    ],
     queryFn: () =>
       productService.getProducts({
         page,
@@ -147,6 +172,8 @@ export default function Product() {
         search: searchTerm || undefined,
         tenant_id: reduxProjectId ? Number(reduxProjectId) : undefined,
         brand: selectedBrands.length ? selectedBrands.join(",") : undefined,
+        sort_by: sortBy || undefined,
+        sort_order: sortOrder || undefined,
       }),
     enabled: !!reduxProjectId,
     placeholderData: keepPreviousData,
@@ -230,16 +257,41 @@ export default function Product() {
     return "bg-amber-500";
   };
 
+  const handleSort = (key: string) => {
+    const backendSortKeyMap: Record<string, string> = {
+      name: "name",
+      sku: "sku",
+      brand_name: "brand",
+      visibility_rate: "visibility",
+    };
+
+    const targetKey = backendSortKeyMap[key] || key;
+    const params = new URLSearchParams(searchParams);
+
+    if (sortBy === targetKey) {
+      if (sortOrder === "asc") {
+        params.set("sort_order", "desc");
+      } else {
+        // Clear sorting when toggled past descending
+        params.delete("sort_by");
+        params.delete("sort_order");
+      }
+    } else {
+      params.set("sort_by", targetKey);
+      params.set("sort_order", "asc");
+    }
+
+    params.set("page", "1"); // Reset to page 1 on sort change
+    setSearchParams(params);
+  };
+
   const columns = [
     {
       key: "name",
-      label: "PRODUCT",
+      label: "PRODUCT TITLE",
+      sortable: true,
       render: (value: string, row: ProductType) => (
         <div className="flex items-center gap-3">
-          {/* Green Box Icon Container */}
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
-            <Box className="h-5 w-5" />
-          </div>
           <div className="flex flex-col">
             <Link
               to={`/admin/product/${row.id}`}
@@ -257,6 +309,7 @@ export default function Product() {
     {
       key: "sku",
       label: "SKU / MPN",
+      sortable: true,
       render: (_: string, row: ProductType) => (
         <div className="flex flex-col text-xs font-mono">
           <span className="font-sans font-medium text-slate-700">
@@ -269,8 +322,9 @@ export default function Product() {
     {
       key: "brand_name",
       label: "BRAND",
+      sortable: true,
       render: (value: string) => (
-        <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-600">
+        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium">
           {value ?? "Unknown"}
         </span>
       ),
@@ -278,16 +332,31 @@ export default function Product() {
     {
       key: "analytics.visibility_rate",
       label: "VISIBILITY",
+      sortable: true,
       render: (value: number) => {
         const numValue = value ?? 0;
         return (
-          <div className="flex items-center gap-3 w-28">
+          // <div className="flex items-center gap-3 w-28">
+          //   <div className="h-2 w-full rounded-full bg-slate-100">
+          //     <div
+          //       className={`h-2 rounded-full ${getVisibilityColor(numValue)}`}
+          //       style={{ width: `${numValue}%` }}
+          //     />
+          //   </div>
+          //   <span className="text-sm font-semibold text-slate-700">
+          //     {numValue}
+          //   </span>
+          // </div>
+          <div className="flex flex-col gap-1 w-28">
+            {/* Progress Bar Container */}
             <div className="h-2 w-full rounded-full bg-slate-100">
               <div
                 className={`h-2 rounded-full ${getVisibilityColor(numValue)}`}
-                style={{ width: `${numValue}%` }}
+                style={{ width: `${Math.min(100, Math.max(0, numValue))}%` }}
               />
             </div>
+
+            {/* Value rendered below */}
             <span className="text-sm font-semibold text-slate-700">
               {numValue}
             </span>
@@ -319,19 +388,19 @@ export default function Product() {
       key: "actions",
       label: "ACTIONS",
       render: (_: unknown, row: ProductType) => (
-        <div className="flex items-center justify-end gap-2 text-slate-400">
+        <div className="flex items-center gap-2 text-slate-400">
           {/* Changed button to Link for product page navigation */}
           <Link
             to={`/admin/product/${row.id}`}
-            className="p-1 hover:text-cyan-600 transition-colors"
+            className="p-1 hover:text-cyan-600 transition-colors cursor-pointer"
           >
             <Eye className="h-4 w-4" />
           </Link>
           <button
             onClick={() => handleEdit(row)}
-            className="p-1 hover:text-slate-600 transition-colors"
+            className="p-1 hover:text-slate-600 transition-colors cursor-pointer"
           >
-            <MoreVertical className="h-4 w-4" />
+            <SquarePen className="h-4 w-4" />
           </button>
         </div>
       ),
@@ -354,16 +423,23 @@ export default function Product() {
 
   return (
     <>
+      {headerActionsContainer &&
+        createPortal(
+          <button
+            onClick={() => {
+              setSelectedProduct(null);
+              setIsUpdate(false);
+              setDrawer(true);
+            }}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            New Product
+          </button>,
+          headerActionsContainer,
+        )}
       <div className="px-1 py-1 flex justify-between items-center  gap-4">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="w-full max-w-md">
-            <AppSearch
-              value={localSearch}
-              onChange={handleSearchChange}
-              placeholder="Search products..."
-            />
-          </div>
-
+        <div className="flex w-full mb-2">
           <div className="w-64">
             <AppMultiSelect
               options={brandOptions}
@@ -372,19 +448,14 @@ export default function Product() {
               placeholder="Brands"
             />
           </div>
+          <div className="w-1/2 ml-auto">
+            <AppSearch
+              value={localSearch}
+              onChange={handleSearchChange}
+              placeholder="Search products..."
+            />
+          </div>
         </div>
-
-        <button
-          onClick={() => {
-            setSelectedProduct(null);
-            setIsUpdate(false);
-            setDrawer(true);
-          }}
-          className="bg-cyan-400 hover:bg-cyan-500 text-black px-1 py-2 rounded-lg flex items-center gap-2 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 shrink-0"
-        >
-          <Plus size={16} />
-          <span className="whitespace-nowrap">New Product</span>
-        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-2 bg-slate-50">
@@ -434,7 +505,14 @@ export default function Product() {
 
         {/* DATA TABLE VIEW */}
         <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-          <AppTable columns={columns} data={products} isLoading={isPending} />
+          <AppTable
+            columns={columns}
+            data={products}
+            isLoading={isPending}
+            sortKey={activeTableSortKey}
+            sortDirection={sortOrder}
+            onSort={handleSort}
+          />
         </div>
 
         {/* REUSABLE PAGINATION FOOTER */}

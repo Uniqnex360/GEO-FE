@@ -9,7 +9,8 @@ import {
 import type { AxiosError } from "axios";
 import { useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Plus, SquarePen, Trash2 } from "lucide-react";
+import { createPortal } from "react-dom";
 
 import { selectGlobalProjectId } from "../../store/projectSlice";
 
@@ -46,6 +47,10 @@ export default function Brand() {
 
   // --- Local Search State for Debouncing ---
   const [localSearch, setLocalSearch] = useState(searchTerm);
+
+  const headerActionsContainer = document.getElementById(
+    "layout-actions-portal",
+  );
 
   // --- Search & Page State Sync Helpers ---
   const setPage = (newPage: number) => {
@@ -368,7 +373,7 @@ export default function Brand() {
             onClick={() => handleEdit(row)}
             className="text-yellow-500 hover:text-yellow-600 font-medium text-sm cursor-pointer"
           >
-            Edit
+            <SquarePen size={16}/>
           </button>
           <button
             onClick={() => {
@@ -377,7 +382,7 @@ export default function Brand() {
             }}
             className="text-red-500 hover:text-red-600 font-medium text-sm cursor-pointer"
           >
-            Delete
+            <Trash2 size={16}/>
           </button>
         </div>
       ),
@@ -395,33 +400,31 @@ export default function Brand() {
 
   return (
     <>
-      {/* <BrandHeader
-        onCreate={() => {
-          setSelectedBrand(null);
-          setIsUpdate(false);
-          setDrawer(true);
-        }}
-      /> */}
-
-      <div className="p-8 space-y-6">
-        <div className="flex justify-between mb-8">
-          <AppSearch
-            value={localSearch}
-            onChange={(val) => setLocalSearch(val)}
-            placeholder="Search brands..."
-          />
-
+      {headerActionsContainer &&
+        createPortal(
           <button
             onClick={() => {
               setSelectedBrand(null);
               setIsUpdate(false);
               setDrawer(true);
             }}
-            className="bg-cyan-400 text-black px-4 py-2 rounded-lg flex items-center gap-2 cursor-pointer"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
           >
-            <Plus size={16} />
+            <Plus className="w-4 h-4 stroke-[2.5]" />
             New Brand
-          </button>
+          </button>,
+          headerActionsContainer,
+        )}
+
+      <div className="">
+        <div className="flex mb-2">
+          <div className="w-1/2 ml-auto">
+            <AppSearch
+              value={localSearch}
+              onChange={(val) => setLocalSearch(val)}
+              placeholder="Search brands..."
+            />
+          </div>
         </div>
 
         {/* MAIN DATA TABLE */}

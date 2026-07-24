@@ -25,7 +25,7 @@ export interface ProductFAQ {
 
 export interface Product {
   id: number;
-  brand_id: number;
+  brand_id: number | string;
   name: string;
   brand_name?: string | null;
   manufacturer?: string | null;
@@ -96,6 +96,8 @@ export interface GetProductsParams {
   search?: string;
   tenant_id?: number;
   brand?: string;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
 }
 
 // ==========================================

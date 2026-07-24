@@ -2,6 +2,8 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { productService } from "../../api/product";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -23,6 +25,8 @@ export default function ProductDashboard() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "visibility";
+
+  const navigate = useNavigate();
 
   // React Query fetch
   const {
@@ -87,124 +91,129 @@ export default function ProductDashboard() {
   const displayProductInfo = cachedProductInfo || productInfo;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans p-6">
-      {/* 1. STATIC HEADER BANNER (Perfect state locking) */}
-      <header className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-xl">
-              {displayProductInfo?.icon || "📦"}
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">
-                {displayProductInfo?.title}
-              </h1>
-              <p className="text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1 mt-0.5">
-                <span>
-                  🏢 <strong>{displayProductInfo?.brand}</strong> (
-                  {displayProductInfo?.retailer}, {displayProductInfo?.category}
-                  )
-                </span>
-                <span>
-                  <strong>SKU:</strong> {displayProductInfo?.sku}
-                </span>
-                <span>
-                  <strong>MPN:</strong> {displayProductInfo?.mpn}
-                </span>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Global Scores Banner Block */}
-        <div className="space-y-4">
-          <div className="bg-gradient-to-r from-blue-700 to-cyan-500 rounded-xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-lg">
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-blue-200">
-                AI Visibility Score
-              </span>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-5xl font-black">
-                  {displayProductInfo?.globalScores?.visibilityScore}
-                </span>
-                <span className="text-sm opacity-80">out of 100</span>
+    <>
+      <div className="w-full cursor-pointer">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 bg-white hover:bg-slate-100 border cursor-pointer border-slate-200 rounded-lg transition-colors text-slate-500 hover:text-slate-800 shadow-sm"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="min-h-screen bg-slate-50 text-slate-800 font-sans py-3">
+        {/* 1. STATIC HEADER BANNER (Perfect state locking) */}
+        <header className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-xl">
+                {displayProductInfo?.icon || "📦"}
               </div>
-            </div>
-
-            <div className="flex gap-8 border-t md:border-t-0 md:border-l border-blue-500 pt-4 md:pt-0 md:pl-8 w-full md:w-auto justify-around">
               <div>
-                <span className="text-xs text-blue-200 block">
-                  Mention Rate
-                </span>
-                <span className="text-2xl font-bold">
-                  {displayProductInfo?.globalScores?.mentionRate}%
-                </span>
-              </div>
-
-              <div>
-                <span className="text-xs text-blue-200 block">
-                  Reviews Count
-                </span>
-                <span className="text-2xl font-bold">
-                  {displayProductInfo?.globalScores?.reviewsCount}
-                </span>
+                <h1 className="text-xl font-bold text-slate-900">
+                  {displayProductInfo?.title}
+                </h1>
+                <p className="text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1 mt-0.5">
+                  <span>
+                    <strong>SKU:</strong> {displayProductInfo?.sku}
+                  </span>
+                  <span>
+                    <strong>MPN:</strong> {displayProductInfo?.mpn}
+                  </span>
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Model Breakdown Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {/* @ts-ignore */}
-            {displayProductInfo?.engineBreakdown?.map((engine) => (
-              <div
-                key={engine.name}
-                className="bg-slate-100/70 border border-slate-200/60 rounded-xl p-3 text-center flex flex-col justify-center"
-              >
-                <span className="text-xs text-slate-500 font-medium">
-                  {engine.name}
+          {/* Global Scores Banner Block */}
+          <div className="space-y-4">
+            <div className="bg-gradient-to-r from-blue-700 to-cyan-500 rounded-xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-lg">
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-blue-200">
+                  AI Visibility Score
                 </span>
-                <span className="text-lg font-bold text-slate-800 mt-0.5">
-                  {engine.score}%
-                </span>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-5xl font-black">
+                    {displayProductInfo?.globalScores?.visibilityScore}
+                  </span>
+                  <span className="text-sm opacity-80">out of 100</span>
+                </div>
               </div>
-            ))}
+
+              <div className="flex gap-8 border-t md:border-t-0 md:border-l border-blue-500 pt-4 md:pt-0 md:pl-8 w-full md:w-auto justify-around">
+                <div>
+                  <span className="text-xs text-blue-200 block">
+                    Mention Rate
+                  </span>
+                  <span className="text-2xl font-bold">
+                    {displayProductInfo?.globalScores?.mentionRate}%
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-xs text-blue-200 block">
+                    Reviews Count
+                  </span>
+                  <span className="text-2xl font-bold">
+                    {displayProductInfo?.globalScores?.reviewsCount}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Model Breakdown Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* @ts-ignore */}
+              {displayProductInfo?.engineBreakdown?.map((engine) => (
+                <div
+                  key={engine.name}
+                  className="bg-slate-100/70 border border-slate-200/60 rounded-xl p-3 text-center flex flex-col justify-center"
+                >
+                  <span className="text-xs text-slate-500 font-medium">
+                    {engine.name}
+                  </span>
+                  <span className="text-lg font-bold text-slate-800 mt-0.5">
+                    {engine.score}%
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* 2. ROUTER-DRIVEN TAB NAVIGATION */}
-      <nav className="flex border-b border-slate-200 mb-6 gap-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => handleTabChange(tab.id)}
-            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all duration-200 -mb-px ${
-              activeTab === tab.id
-                ? "border-blue-600 text-blue-600 bg-white rounded-t-lg"
-                : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+        {/* 2. ROUTER-DRIVEN TAB NAVIGATION */}
+        <nav className="flex border-b border-slate-200 mb-6 gap-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
+              className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all duration-200 -mb-px ${
+                activeTab === tab.id
+                  ? "border-blue-600 text-blue-600 bg-white rounded-t-lg"
+                  : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
-      {/* 3. DYNAMIC WORKSPACE COMPONENT PANEL */}
-      <main className="min-h-[350px]">
-        {activeTab === "visibility" && (
-          <VisibilityTabContent data={tabData} isLoading={isLoading} />
-        )}
-        {activeTab === "competitor" && (
-          <CompetitorTabContent data={tabData} isLoading={isLoading} />
-        )}
-        {activeTab === "citation" && (
-          <CitationTabContent data={tabData} isLoading={isLoading} />
-        )}
-        {activeTab === "recommendations" && (
-          <RecommendationsTabContent data={tabData} isLoading={isLoading} />
-        )}
-      </main>
-    </div>
+        {/* 3. DYNAMIC WORKSPACE COMPONENT PANEL */}
+        <main className="min-h-[350px]">
+          {activeTab === "visibility" && (
+            <VisibilityTabContent data={tabData} isLoading={isLoading} />
+          )}
+          {activeTab === "competitor" && (
+            <CompetitorTabContent data={tabData} isLoading={isLoading} />
+          )}
+          {activeTab === "citation" && (
+            <CitationTabContent data={tabData} isLoading={isLoading} />
+          )}
+          {activeTab === "recommendations" && (
+            <RecommendationsTabContent data={tabData} isLoading={isLoading} />
+          )}
+        </main>
+      </div>
+    </>
   );
 }
 

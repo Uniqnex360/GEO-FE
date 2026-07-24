@@ -121,9 +121,6 @@ export default function Dashboard() {
             {data.metaContext.competitorsCount} competitors
           </div>
         </div>
-        <button className="text-sm font-semibold text-blue-600 hover:underline">
-          View Project Details
-        </button>
       </div>
 
       {/* --- KPI Grid Summary Row --- */}
