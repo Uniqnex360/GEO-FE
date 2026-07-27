@@ -145,7 +145,7 @@ export default function ProductDashboard() {
                     Mention Rate
                   </span>
                   <span className="text-2xl font-bold">
-                    {displayProductInfo?.globalScores?.mentionRate}%
+                    {displayProductInfo?.globalScores?.mentionRate}
                   </span>
                 </div>
 

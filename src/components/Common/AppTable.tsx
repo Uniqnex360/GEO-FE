@@ -96,7 +96,7 @@ export default function AppTable({
             overflow-y-auto
             scrollbar-thin
             scrollbar-thumb-gray-200
-           
+            
             hover:scrollbar-thumb-gray-400
           "
         >
@@ -164,23 +164,33 @@ export default function AppTable({
                       // ✅ FIX: compute once
                       const value = getNestedValue(row, column.key);
 
+                      // Helper to safely format non-primitive/object values
+                      const renderableValue =
+                        typeof value === "object" && value !== null
+                          ? JSON.stringify(value)
+                          : value;
+
                       return (
                         <td
                           key={column.key}
                           className="px-6 py-4 text-sm text-slate-900"
                         >
                           <div
-                            title={String(value || "")}
+                            title={String(
+                              typeof value === "object" && value !== null
+                                ? ""
+                                : value || "",
+                            )}
                             className="truncate max-w-37.5 md:max-w-50 lg:max-w-75"
                           >
                             {column.customTruncate === true
                               ? truncateText(
-                                  String(value),
+                                  String(renderableValue ?? ""),
                                   column.truncateLength ?? 15,
                                 )
                               : column.render
                                 ? column.render(value, row)
-                                : (value ?? "-")}
+                                : (renderableValue ?? "-")}
                           </div>
                         </td>
                       );

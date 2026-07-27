@@ -342,12 +342,12 @@ export default function Brand() {
           return <span className="text-slate-400 font-medium text-xs">-</span>;
         }
 
-        const rate = Math.min(Math.max(value, 0), 100);
+        const rate = Math.min(Math.max(value, 0), 10);
 
         const getBadgeStyle = (val: number) => {
-          if (val >= 80)
+          if (val >= 8)
             return "bg-emerald-50 text-emerald-700 border-emerald-200";
-          if (val >= 40) return "bg-blue-50 text-blue-700 border-blue-200";
+          if (val >= 4) return "bg-blue-50 text-blue-700 border-blue-200";
           return "bg-slate-50 text-slate-600 border-slate-200";
         };
 
@@ -358,7 +358,7 @@ export default function Brand() {
                 rate,
               )}`}
             >
-              {rate.toFixed(1)}%
+              {rate.toFixed(1)}
             </span>
           </div>
         );
@@ -373,7 +373,7 @@ export default function Brand() {
             onClick={() => handleEdit(row)}
             className="text-yellow-500 hover:text-yellow-600 font-medium text-sm cursor-pointer"
           >
-            <SquarePen size={16}/>
+            <SquarePen size={16} />
           </button>
           <button
             onClick={() => {
@@ -382,7 +382,7 @@ export default function Brand() {
             }}
             className="text-red-500 hover:text-red-600 font-medium text-sm cursor-pointer"
           >
-            <Trash2 size={16}/>
+            <Trash2 size={16} />
           </button>
         </div>
       ),

@@ -70,7 +70,7 @@ export default function Product() {
     name: "name",
     sku: "sku",
     brand_name: "brand",
-    visibility_rate: "visibility",
+    "analytics.visibility_rate": "visibility",
   };
   const activeTableSortKey = activeSortKeyMap[sortBy] || sortBy;
 
@@ -330,23 +330,24 @@ export default function Product() {
       ),
     },
     {
+      key: "analytics.by_engine.chatgpt.visibility_rate",
+      label: "ChatGPT",
+    },
+     {
+      key: "analytics.by_engine.gemini.visibility_rate",
+      label: "Gemini",
+    },
+     {
+      key: "analytics.by_engine.anthropic.visibility_rate",
+      label: "Claude",
+    },
+    {
       key: "analytics.visibility_rate",
       label: "VISIBILITY",
       sortable: true,
       render: (value: number) => {
         const numValue = value ?? 0;
         return (
-          // <div className="flex items-center gap-3 w-28">
-          //   <div className="h-2 w-full rounded-full bg-slate-100">
-          //     <div
-          //       className={`h-2 rounded-full ${getVisibilityColor(numValue)}`}
-          //       style={{ width: `${numValue}%` }}
-          //     />
-          //   </div>
-          //   <span className="text-sm font-semibold text-slate-700">
-          //     {numValue}
-          //   </span>
-          // </div>
           <div className="flex flex-col gap-1 w-28">
             {/* Progress Bar Container */}
             <div className="h-2 w-full rounded-full bg-slate-100">
@@ -364,26 +365,6 @@ export default function Product() {
         );
       },
     },
-    // {
-    //   key: "no_of_faqs",
-    //   label: "FAQS",
-    //   render: (value: number) => (
-    //     <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-    //       <HelpCircle className="h-4 w-4 text-amber-500" />
-    //       <span>{value ?? 0}</span>
-    //     </div>
-    //   ),
-    // },
-    // {
-    //   key: "no_of_reviews",
-    //   label: "REVIEWS",
-    //   render: (value: number) => (
-    //     <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-    //       <MessageSquare className="h-4 w-4 text-violet-500" />
-    //       <span>{value ?? 0}</span>
-    //     </div>
-    //   ),
-    // },
     {
       key: "actions",
       label: "ACTIONS",
@@ -485,7 +466,7 @@ export default function Product() {
             Avg. Mention Rate
           </span>
           <span className="text-3xl font-bold text-emerald-600 mt-2">
-            {stats?.avg_mention_rate.toFixed(1)}%
+            {stats?.avg_mention_rate.toFixed(1)}
           </span>
         </div>
 
@@ -519,7 +500,7 @@ export default function Product() {
         {paginationData && (
           <AppPagination
             currentPage={page}
-            totalPages={paginationData.total_pages}
+            totalPages={Math.floor(paginationData.total / limit)}
             totalEntries={paginationData.total}
             onPageChange={setPage}
           />

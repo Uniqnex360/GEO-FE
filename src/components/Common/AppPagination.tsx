@@ -21,25 +21,25 @@ export function AppPagination({
   if (validTotalPages <= 1) return null;
 
   return (
-    <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-4 text-sm text-slate-500">
+    <div className="mt-8 flex items-center justify-end border-t border-slate-200 pt-4 text-sm text-slate-500 gap-4">
       <p>
         Showing Page{" "}
         <span className="font-semibold text-slate-800">{validPage}</span> of{" "}
         <span className="font-semibold text-slate-800">{validTotalPages}</span>{" "}
-        ({totalEntries} entries)
+        (Total: {totalEntries})
       </p>
       <div className="flex items-center gap-2">
         <button
           disabled={validPage <= 1}
           onClick={() => onPageChange(Math.max(validPage - 1, 1))}
-          className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
         <button
           disabled={validPage >= validTotalPages}
           onClick={() => onPageChange(Math.min(validPage + 1, validTotalPages))}
-          className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
