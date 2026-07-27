@@ -184,6 +184,7 @@ export default function Product() {
 
   // Supporting backend responses matching paginated structures
   const products: ProductType[] = data?.data ?? [];
+  const productIds: number[] = data?.product_ids ?? [];
   const paginationData = data?.pagination;
 
   // ==========================================
@@ -298,6 +299,7 @@ export default function Product() {
           <div className="flex flex-col">
             <Link
               to={`/admin/product/${row.id}`}
+              state={{ productIds }} // 👈 Pass productIds in state
               className="text-sm font-semibold text-slate-900 hover:text-cyan-600 transition-colors line-clamp-1"
             >
               {value ?? "Unknown Product"}
@@ -376,6 +378,7 @@ export default function Product() {
           {/* Changed button to Link for product page navigation */}
           <Link
             to={`/admin/product/${row.id}`}
+            state={{ productIds }} // 👈 Pass here too
             className="p-1 hover:text-cyan-600 transition-colors cursor-pointer"
           >
             <Eye className="h-4 w-4" />
@@ -440,12 +443,10 @@ export default function Product() {
                 apiUrl="api/v1/product/bulk-upload/"
                 payloadKey="file"
                 onSuccess={() => {
-                  toast.success("Import is running on Background")
+                  toast.success("Import is running on Background");
                 }}
                 onError={() => {
-                  toast.error(
-                    "Import failed"
-                  )
+                  toast.error("Import failed");
                 }}
                 iconSize={22}
                 className="text-slate-600 hover:text-indigo-600 transition-colors"

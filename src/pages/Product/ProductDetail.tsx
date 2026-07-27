@@ -1,4 +1,4 @@
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { productService } from "../../api/product";
@@ -20,13 +20,32 @@ import {
   Legend,
   Cell,
 } from "recharts";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function ProductDashboard() {
   const { id } = useParams();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "visibility";
 
   const navigate = useNavigate();
+
+  // --- Product Queue Navigation Logic ---
+  const productIds: number[] = location.state?.productIds ?? [];
+  const currentIdNum = Number(id);
+  const currentIndex = productIds.indexOf(currentIdNum);
+
+  const prevProductId = currentIndex > 0 ? productIds[currentIndex - 1] : null;
+  const nextProductId =
+    currentIndex !== -1 && currentIndex < productIds.length - 1
+      ? productIds[currentIndex + 1]
+      : null;
+
+  const handleNavigateProduct = (targetId: number) => {
+    navigate(`/admin/product/${targetId}?tab=${activeTab}`, {
+      state: { productIds },
+    });
+  };
 
   // React Query fetch
   const {
@@ -122,6 +141,37 @@ export default function ProductDashboard() {
                 </p>
               </div>
             </div>
+
+            {/* 👈 PREVIOUS / NEXT BUTTONS ADDED RIGHT HERE */}
+            {productIds.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 mr-1 font-medium">
+                  {currentIndex + 1} of {productIds.length}
+                </span>
+
+                <button
+                  onClick={() =>
+                    prevProductId && handleNavigateProduct(prevProductId)
+                  }
+                  disabled={!prevProductId}
+                  title="Previous Product"
+                  className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-600 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed  cursor-pointer transition-all shadow-sm"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() =>
+                    nextProductId && handleNavigateProduct(nextProductId)
+                  }
+                  disabled={!nextProductId}
+                  title="Next Product"
+                  className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-600 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Global Scores Banner Block */}

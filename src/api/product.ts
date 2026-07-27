@@ -87,6 +87,7 @@ export interface ProductList {
     total: number;
     total_pages: number; // Added to match template formatting structure
   };
+  product_ids: number[]
 }
 
 // Interface for dynamic parameters passing through components
