@@ -23,6 +23,9 @@ import { brandService, type AppMetaList } from "../../api/brand";
 import { selectGlobalProjectId } from "../../store/projectSlice";
 import { AppMultiSelect } from "../../components/Common/AppMultiSelect";
 
+import { ExcelDownloadButton } from "../../components/Common/ExcelDownload";
+import { ExcelUploadButton } from "../../components/Common/ExcelUpload";
+
 // Import your newly refactored schema and client layer
 import {
   productService,
@@ -333,11 +336,11 @@ export default function Product() {
       key: "analytics.by_engine.chatgpt.visibility_rate",
       label: "ChatGPT",
     },
-     {
+    {
       key: "analytics.by_engine.gemini.visibility_rate",
       label: "Gemini",
     },
-     {
+    {
       key: "analytics.by_engine.anthropic.visibility_rate",
       label: "Claude",
     },
@@ -406,17 +409,49 @@ export default function Product() {
     <>
       {headerActionsContainer &&
         createPortal(
-          <button
-            onClick={() => {
-              setSelectedProduct(null);
-              setIsUpdate(false);
-              setDrawer(true);
-            }}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            New Product
-          </button>,
+          <>
+            <div className="flex items-center gap-5">
+              <button
+                onClick={() => {
+                  setSelectedProduct(null);
+                  setIsUpdate(false);
+                  setDrawer(true);
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+                New Product
+              </button>
+              <ExcelDownloadButton
+                apiUrl={`api/v1/product/bulk-upload-template/`}
+                filename="product_template.xlsx"
+                iconSize={22}
+                className="text-slate-600 hover:text-green-600 transition-colors"
+                onSuccess={() =>
+                  toast.success("Your download has completed successfully!")
+                }
+                onError={(err) => {
+                  console.log("err", err);
+                  toast.error("Something went wrong spinning up your file.");
+                }}
+              />
+
+              <ExcelUploadButton
+                apiUrl="api/v1/product/bulk-upload/"
+                payloadKey="file"
+                onSuccess={() => {
+                  toast.success("Import is running on Background")
+                }}
+                onError={() => {
+                  toast.error(
+                    "Import failed"
+                  )
+                }}
+                iconSize={22}
+                className="text-slate-600 hover:text-indigo-600 transition-colors"
+              />
+            </div>
+          </>,
           headerActionsContainer,
         )}
       <div className="px-1 py-1 flex justify-between items-center  gap-4">
@@ -500,7 +535,7 @@ export default function Product() {
         {paginationData && (
           <AppPagination
             currentPage={page}
-            totalPages={Math.floor(paginationData.total / limit)}
+            totalPages={Math.ceil(paginationData.total / limit)}
             totalEntries={paginationData.total}
             onPageChange={setPage}
           />

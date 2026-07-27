@@ -3,6 +3,7 @@ import { api, API_V1 } from "./base";
 const ENDPOINTS = {
   CATEGORY_LIST: `${API_V1}meta/category/list/`,
   INDUSTRY_LIST: `${API_V1}meta/industry/list/`,
+  TAXONOMY_LIST: `${API_V1}meta/taxonomy/list/`
 };
 
 class MetaService {
@@ -36,6 +37,20 @@ class MetaService {
       has_more: res.data.has_more,
       next_offset: res.data.next_offset,
     };
+  };
+
+  get_taxonomy = async (
+    search: string,
+    page: number,
+    limit: number,
+    sort_by?: string,
+    sort_order?: string,
+  ) => {
+    const res = await api.get(ENDPOINTS.TAXONOMY_LIST, {
+      params: { search, page, limit, sort_by, sort_order },
+    });
+
+    return res.data;
   };
 }
 

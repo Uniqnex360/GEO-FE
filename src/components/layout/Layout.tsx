@@ -13,6 +13,7 @@ import {
   FiFileText,
   FiTarget,
   FiSettings,
+  FiLayers,
 } from "react-icons/fi";
 
 import { projectService } from "../../api/project";
@@ -37,6 +38,7 @@ export interface Project {
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: FiHome },
   { to: "/admin/project", label: "Projects", icon: FiPackage },
+  { to: "/admin/category", label: "Category", icon: FiLayers },
   { to: "/admin/brand", label: "Brands", icon: FiBriefcase },
   { to: "/admin/product", label: "Products", icon: FiPackage },
   { to: "/admin/chat", label: "Chat", icon: FiFileText },

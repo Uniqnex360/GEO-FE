@@ -15,6 +15,7 @@ import CitationRoutes from "./Citation";
 import CompetitorRoutes from "./Competitor";
 import ProjectRoutes from "./Project";
 import AdminSettingsRoutes from "./AdminSettings";
+import MetaRoutes from "./Meta";
 
 export default function AppRouter() {
   return (
@@ -47,6 +48,7 @@ export default function AppRouter() {
           {CitationRoutes}
           {CompetitorRoutes}
           {AdminSettingsRoutes}
+          {MetaRoutes}
         </Route>
       </Routes>
     </BrowserRouter>
