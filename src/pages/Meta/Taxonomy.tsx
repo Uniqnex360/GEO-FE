@@ -146,6 +146,10 @@ export default function Taxonomy() {
       ),
     },
     {
+      key: "taxonomy",
+      label: "Taxonomy"
+    },
+    {
       key: "category_name",
       label: "CATEGORY NAME",
       sortable: true,

@@ -116,13 +116,8 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = tokenStorage.getAccess();
 
-  console.log("[API REQUEST] URL:", config.url);
-  console.log("[API REQUEST] Method:", config.method);
-  console.log("[API REQUEST] Token exists:", !!token);
-
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log("[API REQUEST] Authorization set");
   }
 
   return config;
@@ -160,7 +155,6 @@ const processQueue = (error: any, token: string | null = null) => {
 // ------------------------
 api.interceptors.response.use(
   (response) => {
-    console.log("[API RESPONSE] Success:", response.config.url);
     return response;
   },
 

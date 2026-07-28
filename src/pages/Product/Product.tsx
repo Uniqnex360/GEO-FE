@@ -383,12 +383,14 @@ export default function Product() {
             to={`/admin/product/${row.id}`}
             state={{ productIds }} // 👈 Pass here too
             className="p-1 hover:text-cyan-600 transition-colors cursor-pointer"
+            title="View"
           >
             <Eye className="h-4 w-4" />
           </Link>
           <button
             onClick={() => handleEdit(row)}
             className="p-1 hover:text-slate-600 transition-colors cursor-pointer"
+            title="Edit"
           >
             <SquarePen className="h-4 w-4" />
           </button>

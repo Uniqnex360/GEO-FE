@@ -133,7 +133,6 @@ const ProjectForm = ({ initialData, isUpdate, loading, onSubmit }: Props) => {
         <AppFormInput
           label="Project Name"
           name="name"
-          placeholder="CH Marine"
           register={register}
           rules={{
             required: "Project name is required",
@@ -145,7 +144,6 @@ const ProjectForm = ({ initialData, isUpdate, loading, onSubmit }: Props) => {
         <AppFormInput
           label="Website"
           name="website_url"
-          placeholder="Website"
           register={register}
           error={errors.website_url}
           formState={formState}
@@ -183,7 +181,6 @@ const ProjectForm = ({ initialData, isUpdate, loading, onSubmit }: Props) => {
           label="Description"
           name="description"
           type="textarea"
-          placeholder=""
           register={register}
           error={errors.description}
           formState={formState}

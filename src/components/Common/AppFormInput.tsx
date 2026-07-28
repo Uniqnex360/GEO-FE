@@ -296,14 +296,26 @@ const AppFormInput = <T extends FieldValues>({
             control={activeControl}
             rules={rules}
             render={({ field: { onChange, value } }) => {
+              console.log("🔍 [Controller] RENDER:", {
+                name,
+                value,
+                type: typeof value,
+              });
+
               const objectValue = value
                 ? { id: value, value: String(value) }
                 : null;
+
+              console.log("🔍 [Controller] Computed objectValue:", objectValue);
 
               return (
                 <AppRemoteSelect
                   value={objectValue}
                   onChange={(selectedOption) => {
+                    console.log(
+                      "🔍 [Controller] onChange triggered with:",
+                      selectedOption,
+                    );
                     onChange(selectedOption ? selectedOption.id : "");
                   }}
                   fetchFn={fetchFn}
@@ -342,7 +354,7 @@ const AppFormInput = <T extends FieldValues>({
               options={options}
               value={value}
               onChange={onChange}
-              placeholder={placeholder || `Select ${label}...`}
+              placeholder={placeholder || ""}
               searchable={searchable}
               selectAllLabel={selectAllLabel}
             />

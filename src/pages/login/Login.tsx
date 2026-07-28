@@ -33,7 +33,6 @@ export default function Login() {
   const loginMutation = useMutation({
     mutationFn: accessTokenAPI,
     onSuccess: (data: ACCESS_TOKEN) => {
-      // assuming API returns { accessToken: "..." }
       tokenStorage.setTokens(data.access_token, data.refresh_token);
       toast.success("Login successful!");
       navigate("/admin");

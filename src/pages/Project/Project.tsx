@@ -368,18 +368,21 @@ export default function ProjectDashboard() {
 
               navigate(`/admin`);
             }}
+            title="Dashboard"
             className="text-emerald-600 hover:text-emerald-700 text-xs  cursor-pointer"
           >
             <LayoutDashboard size={16} />
           </button>
           <button
             onClick={(e) => handleEdit(row, e)}
+            title="Edit"
             className="text-amber-600 hover:text-amber-700 text-sm font-semibold cursor-pointer"
           >
             <SquarePen size={16} />
           </button>
           <button
             onClick={(e) => handleDeleteTrigger(row.id, e)}
+            title="Delete"
             className="text-red-600 hover:text-red-700 text-sm font-semibold cursor-pointer"
           >
             <Trash2 size={16} />
@@ -408,7 +411,7 @@ export default function ProjectDashboard() {
               setIsUpdate(false);
               setDrawer(true);
             }}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm transition-all"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" /> New project
           </button>,

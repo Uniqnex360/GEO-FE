@@ -375,6 +375,7 @@ export default function Brand() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => handleEdit(row)}
+            title="Edit"
             className="text-yellow-500 hover:text-yellow-600 font-medium text-sm cursor-pointer"
           >
             <SquarePen size={16} />
@@ -384,6 +385,7 @@ export default function Brand() {
               setDeleteId(row.id);
               setDeleteModal(true);
             }}
+            title="Delete"
             className="text-red-500 hover:text-red-600 font-medium text-sm cursor-pointer"
           >
             <Trash2 size={16} />

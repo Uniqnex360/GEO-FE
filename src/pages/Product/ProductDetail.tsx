@@ -109,6 +109,21 @@ export default function ProductDashboard() {
   // Use the cached product info if the current one is resolving in the background
   const displayProductInfo = cachedProductInfo || productInfo;
 
+  // Helper to safely format the raw score from 0-100 down to 0-10 scale
+  const rawVisibilityScore = displayProductInfo?.globalScores?.visibilityScore;
+  const formattedVisibilityScore =
+    rawVisibilityScore !== undefined && rawVisibilityScore !== null
+      ? typeof rawVisibilityScore === "number"
+        ? rawVisibilityScore > 10
+          ? (rawVisibilityScore / 10).toFixed(1)
+          : rawVisibilityScore.toFixed(1)
+        : !isNaN(Number(rawVisibilityScore))
+          ? Number(rawVisibilityScore) > 10
+            ? (Number(rawVisibilityScore) / 10).toFixed(1)
+            : Number(rawVisibilityScore).toFixed(1)
+          : rawVisibilityScore
+      : "N/A";
+
   return (
     <>
       <div className="w-full cursor-pointer">
@@ -155,7 +170,7 @@ export default function ProductDashboard() {
                   }
                   disabled={!prevProductId}
                   title="Previous Product"
-                  className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-600 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed  cursor-pointer transition-all shadow-sm"
+                  className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-600 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed cursor-pointer transition-all shadow-sm"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -183,9 +198,9 @@ export default function ProductDashboard() {
                 </span>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-5xl font-black">
-                    {displayProductInfo?.globalScores?.visibilityScore}
+                    {formattedVisibilityScore}
                   </span>
-                  <span className="text-sm opacity-80">out of 100</span>
+                  <span className="text-sm opacity-80">out of 10</span>
                 </div>
               </div>
 
@@ -305,7 +320,7 @@ function VisibilityTabContent({ data, isLoading }: VisibilityProps) {
                 horizontal={false}
                 stroke="#f1f5f9"
               />
-              <XAxis type="number" domain={[0, 100]} stroke="#94a3b8" />
+              <XAxis type="number" domain={[0, 10]} stroke="#94a3b8" />
               <YAxis
                 dataKey="name"
                 type="category"
@@ -379,9 +394,9 @@ function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
   if (!data) return null;
 
   const getBadgeStyle = (score: number) => {
-    if (score >= 75) return "bg-emerald-500 text-white";
+    if (score >= 75) return "bg-orange-500 text-white";
     if (score >= 60) return "bg-amber-500 text-white";
-    return "bg-rose-500 text-white";
+    return "bg-amber-200 text-amber-800"; 
   };
 
   return (
@@ -518,7 +533,8 @@ function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
                   Optimization elements breakdown
                 </span>
               </div>
-              <span className="bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded border border-rose-200">
+              {/* Changed red/rose badge to light orange/amber */}
+              <span className="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-200">
                 ⚠️ {data.priorityCountText || "Gaps Found"}
               </span>
             </div>
@@ -533,13 +549,8 @@ function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
                     <span className="font-semibold text-slate-800">
                       {item.title}
                     </span>
-                    <span
-                      className={
-                        item.status === "High"
-                          ? "text-rose-600 font-bold"
-                          : "text-amber-600 font-semibold"
-                      }
-                    >
+                    {/* Changed High status text color from rose-600 to amber-600 */}
+                    <span className="text-amber-600 font-semibold">
                       {item.gain}
                     </span>
                   </div>

@@ -156,7 +156,6 @@ export default function ProductForm({
           label="Brand"
           name="brand_id"
           type="select"
-          placeholder="Select a Brand..."
           register={register}
           //@ts-ignore
           control={control} // 💡 Add this prop here!
@@ -170,7 +169,6 @@ export default function ProductForm({
           label="Product Category"
           name="category"
           type="select"
-          placeholder="Search categories..."
           register={register}
           control={control}
           fetchFn={metaService.get_category}

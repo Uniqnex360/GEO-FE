@@ -45,7 +45,6 @@ export default function BrandForm({
       <AppFormInput
         label="Brand Name"
         name="name"
-        placeholder="Brand Name"
         register={register}
         rules={{
           required: "Brand name is required",
@@ -57,7 +56,6 @@ export default function BrandForm({
       <AppFormInput
         label="Website"
         name="domain"
-        placeholder="Domain"
         register={register}
         error={errors.domain}
         formState={formState}
@@ -66,7 +64,6 @@ export default function BrandForm({
       <AppFormInput
         label="Industry"
         name="industry"
-        placeholder="Industry"
         register={register}
         error={errors.industry}
         formState={formState}
@@ -75,7 +72,6 @@ export default function BrandForm({
       <AppFormInput
         label="Competitors (comma separated)"
         name="competitor"
-        placeholder=""
         register={register}
         error={errors.competitor}
         formState={formState}
@@ -84,7 +80,6 @@ export default function BrandForm({
       <AppFormInput
         label="Country"
         name="country"
-        placeholder="Country"
         register={register}
         error={errors.country}
         formState={formState}

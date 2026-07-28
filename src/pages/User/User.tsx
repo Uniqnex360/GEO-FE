@@ -24,13 +24,6 @@ export default function User() {
     queryFn: userList,
   });
 
-  // Assuming API returns:
-  // {
-  //   data: [...],
-  //   pagination: {...},
-  //   message: "..."
-  // }
-
   const listData = data?.data ?? [];
 
   return (
