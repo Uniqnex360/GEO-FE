@@ -358,7 +358,10 @@ export default function Product() {
             <div className="h-2 w-full rounded-full bg-slate-100">
               <div
                 className={`h-2 rounded-full ${getVisibilityColor(numValue)}`}
-                style={{ width: `${Math.min(100, Math.max(0, numValue))}%` }}
+                /* Multiply numValue by 10 so a 7.78 value translates to 77.8% width */
+                style={{
+                  width: `${Math.min(100, Math.max(0, numValue * 10))}%`,
+                }}
               />
             </div>
 

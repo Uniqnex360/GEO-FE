@@ -307,12 +307,14 @@ export default function Brand() {
       label: "VISIBILITY",
       sortable: true,
       render: (value: any) => {
-        const score =
-          typeof value === "number" ? Math.min(Math.max(value, 0), 100) : 0;
+        // 1. Clamp value between 0 and 10 instead of 0 and 100
+        const rawScore =
+          typeof value === "number" ? Math.min(Math.max(value, 0), 10) : 0;
 
+        // 2. Adjust color thresholds for a 0–10 scale
         const getBarColor = (val: number) => {
-          if (val >= 50) return "bg-emerald-500";
-          if (val >= 15) return "bg-sky-500";
+          if (val >= 5.0) return "bg-emerald-500"; // was >= 50
+          if (val >= 1.5) return "bg-sky-500"; // was >= 15
           return "bg-amber-500";
         };
 
@@ -321,13 +323,15 @@ export default function Brand() {
             <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-300 ${getBarColor(
-                  score,
+                  rawScore,
                 )}`}
-                style={{ width: `${score}%` }}
+                /* 3. Multiply rawScore by 10 so a score of 7.7 gives a 77% wide bar */
+                style={{ width: `${rawScore * 10}%` }}
               />
             </div>
             <span className="text-slate-800 font-semibold text-xs min-w-[32px] text-right">
-              {score.toFixed(1)}
+              {/* 4. Displays formatted score (e.g., 7.7 or 7.8) */}
+              {rawScore.toFixed(1)}
             </span>
           </div>
         );

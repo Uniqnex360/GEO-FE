@@ -144,7 +144,7 @@ export default function ProductForm({
         <AppFormInput
           label="MPN"
           name="mpn"
-          rules={{ required: "MPN is required" }}
+          // rules={{ required: "MPN is required" }}
           register={register}
           error={errors.mpn}
           formState={formState}
