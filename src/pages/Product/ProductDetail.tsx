@@ -81,7 +81,7 @@ export default function ProductDashboard() {
   ];
 
   const handleTabChange = (tabId: string) => {
-    setSearchParams({ tab: tabId });
+    setSearchParams({ tab: tabId }, { state: location.state });
   };
 
   // Initial full-page load loader (Only shows if we have absolutely nothing loaded yet)
@@ -126,13 +126,45 @@ export default function ProductDashboard() {
 
   return (
     <>
-      <div className="w-full cursor-pointer">
+      <div className="w-full cursor-pointer flex justify-between">
         <button
           onClick={() => navigate(-1)}
+          title="Back"
           className="p-2 bg-white hover:bg-slate-100 border cursor-pointer border-slate-200 rounded-lg transition-colors text-slate-500 hover:text-slate-800 shadow-sm"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
+
+        {/* 👈 PREVIOUS / NEXT BUTTONS ADDED RIGHT HERE */}
+        {productIds.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 mr-1 font-medium">
+              {currentIndex + 1} of {productIds.length}
+            </span>
+
+            <button
+              onClick={() =>
+                prevProductId && handleNavigateProduct(prevProductId)
+              }
+              disabled={!prevProductId}
+              title="Previous Product"
+              className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-600 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed cursor-pointer transition-all shadow-sm"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={() =>
+                nextProductId && handleNavigateProduct(nextProductId)
+              }
+              disabled={!nextProductId}
+              title="Next Product"
+              className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-600 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
       <div className="min-h-screen bg-slate-50 text-slate-800 font-sans py-3">
         {/* 1. STATIC HEADER BANNER (Perfect state locking) */}
@@ -156,37 +188,6 @@ export default function ProductDashboard() {
                 </p>
               </div>
             </div>
-
-            {/* 👈 PREVIOUS / NEXT BUTTONS ADDED RIGHT HERE */}
-            {productIds.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400 mr-1 font-medium">
-                  {currentIndex + 1} of {productIds.length}
-                </span>
-
-                <button
-                  onClick={() =>
-                    prevProductId && handleNavigateProduct(prevProductId)
-                  }
-                  disabled={!prevProductId}
-                  title="Previous Product"
-                  className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-600 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed cursor-pointer transition-all shadow-sm"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-
-                <button
-                  onClick={() =>
-                    nextProductId && handleNavigateProduct(nextProductId)
-                  }
-                  disabled={!nextProductId}
-                  title="Next Product"
-                  className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-600 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Global Scores Banner Block */}
@@ -396,7 +397,7 @@ function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
   const getBadgeStyle = (score: number) => {
     if (score >= 75) return "bg-orange-500 text-white";
     if (score >= 60) return "bg-amber-500 text-white";
-    return "bg-amber-200 text-amber-800"; 
+    return "bg-amber-200 text-amber-800";
   };
 
   return (

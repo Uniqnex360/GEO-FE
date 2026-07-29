@@ -184,7 +184,8 @@ export default function Product() {
 
   // Supporting backend responses matching paginated structures
   const products: ProductType[] = data?.data ?? [];
-  const productIds: number[] = data?.product_ids ?? [];
+  // const productIds: number[] = data?.product_ids ?? [];
+  const productIds: number[] = [...(data?.product_ids ?? [])].reverse();
   const paginationData = data?.pagination;
 
   // ==========================================

@@ -102,26 +102,7 @@ export default function Dashboard() {
   return (
     <div className="p-6 bg-slate-50 min-h-screen font-sans text-slate-800">
       {/* --- Top Sub-Header Metadata --- */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
-        <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-slate-600">
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-400">🌐</span>{" "}
-            {data.metaContext.countriesCount} country
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-400">📦</span>{" "}
-            {data.metaContext.productsCount} products
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-400">🔍</span>{" "}
-            {data.metaContext.queriesTrackedCount} queries tracked
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-400">👥</span>{" "}
-            {data.metaContext.competitorsCount} competitors
-          </div>
-        </div>
-      </div>
+
 
       {/* --- KPI Grid Summary Row --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
