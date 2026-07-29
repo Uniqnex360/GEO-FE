@@ -119,7 +119,11 @@ const ProjectForm = ({ initialData, isUpdate, loading, onSubmit }: Props) => {
     control,
     formState,
     formState: { errors },
-  } = useForm<ProjectCU>();
+  } = useForm<ProjectCU>(
+    {
+      defaultValues: {industry: ""}
+    }
+  );
 
   useEffect(() => {
     if (initialData) {
