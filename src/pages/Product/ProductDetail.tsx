@@ -627,6 +627,15 @@ function CitationTabContent({ data, isLoading }: CitationProps) {
 /* ==========================================
    TAB PANEL: PRIORITIZED RECOMMENDATIONS
    ========================================== */
+
+interface CompetitorProduct {
+  competitor_name: string;
+  product_name?: string;
+  product_url: string;
+  price?: string | null;
+}
+
+// Retained legacy interface as optional fallback
 interface Competitor {
   competitor_name: string;
   no_of_faq?: number;
@@ -647,7 +656,8 @@ interface ActionItem {
   effort: string;
   title: string;
   model: string;
-  competitors: Competitor[];
+  competitor_products?: CompetitorProduct[]; // Added new JSON array structure
+  competitors?: Competitor[]; // Retained legacy fallbacks
   impact: number;
   query_optimization_tag: string;
 }
@@ -661,7 +671,7 @@ interface RecommendationsProps {
 
 function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
   if (isLoading) return <TabSpinnerFallback />;
-  if (!data || !data.actions) return null; // Safe guard if actions is missing
+  if (!data || !data.actions) return null; // Safeguard if actions is missing
 
   const getActionColor = (type: string) => {
     switch (type) {
@@ -683,18 +693,22 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
       </h3>
       <div className="space-y-4">
         {data.actions.map((item: ActionItem, index: number) => {
-          // 1. SAFE PARSING: Fallback safely if competitors array is empty or undefined
-          const competitorsString =
-            Array.isArray(item.competitors) && item.competitors.length > 0
-              ? item.competitors.map((c) => c.competitor_name).join(", ")
-              : "";
+          // Check if competitor_products exists and has elements
+          const hasCompetitorProducts =
+            Array.isArray(item.competitor_products) &&
+            item.competitor_products.length > 0;
+
+          // Legacy fallback check
+          const hasLegacyCompetitors =
+            Array.isArray(item.competitors) && item.competitors.length > 0;
+
           return (
             <div
               key={index}
               className="border border-slate-100 rounded-xl p-4 hover:border-slate-200 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
             >
-              {/* 2. CSS FIX: Adding 'flex-1' and 'min-w-0' prevents parent flexbox from squishing this text wrapper to 0px */}
-              <div className="space-y-1.5 flex-1 min-w-0">
+              {/* Left Content Wrapper */}
+              <div className="space-y-2 flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     className={`text-[10px] font-bold text-white uppercase px-2 py-0.5 rounded tracking-wide ${getActionColor(item.type)}`}
@@ -709,24 +723,74 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
                       {item.model.replace("LLMModels.", "")}
                     </span>
                   )}
-                  <span className="bg-green-50 text-green-600 border border-purple-100 text-[10px] font-bold px-2 py-0.5 rounded">
-                    {item.query_optimization_tag || ""}
-                  </span>
+                  {item.query_optimization_tag && (
+                    <span className="bg-green-50 text-green-600 border border-green-100 text-[10px] font-bold px-2 py-0.5 rounded">
+                      {item.query_optimization_tag}
+                    </span>
+                  )}
                 </div>
 
-                {/* 3. TEXT WRAP: Ensure text wraps normally instead of getting cut off */}
+                {/* Title */}
                 <h4 className="text-sm font-bold text-slate-900 break-words">
                   {item.title}
                 </h4>
 
-                <p className="text-xs text-slate-400 break-words">
-                  Competitors:{" "}
-                  <strong className="text-slate-600">
-                    {competitorsString}
-                  </strong>
-                </p>
+                {/* Competitor Products List with Links */}
+                {hasCompetitorProducts && (
+                  <div className="text-xs text-slate-500 space-y-1">
+                    <span className="font-medium text-slate-400 block mb-0.5">
+                      Competitor Products:
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {item.competitor_products!.map((product, pIdx) => (
+                        <a
+                          key={pIdx}
+                          href={product.product_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-blue-600 hover:text-blue-800 text-xs font-medium px-2.5 py-1 rounded-md transition group"
+                        >
+                          <span className="truncate max-w-[280px]">
+                            {product.product_name || product.competitor_name}
+                          </span>
+                          {product.price && (
+                            <span className="text-[10px] bg-slate-200/70 text-slate-700 px-1.5 py-0.2 rounded font-semibold">
+                              {product.price}
+                            </span>
+                          )}
+                          <svg
+                            className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                            />
+                          </svg>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Fallback to Legacy Competitors string if competitor_products isn't available */}
+                {!hasCompetitorProducts && hasLegacyCompetitors && (
+                  <p className="text-xs text-slate-400 break-words">
+                    Competitors:{" "}
+                    <strong className="text-slate-600">
+                      {item
+                        .competitors!.map((c) => c.competitor_name)
+                        .join(", ")}
+                    </strong>
+                  </p>
+                )}
               </div>
 
+              {/* Impact Meter */}
               <div className="flex items-center gap-4 shrink-0">
                 <div className="text-right">
                   <span className="text-[10px] text-slate-400 block font-medium">
@@ -736,7 +800,7 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
                     <div className="w-24 bg-slate-100 h-2 rounded-full overflow-hidden">
                       <div
                         className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${item.impact}%` }}
+                        style={{ width: `${item.impact * 10}%` }} // Adjusted multiplier assuming impact scale of 0-10
                       ></div>
                     </div>
                     <span className="text-sm font-black text-slate-700">
