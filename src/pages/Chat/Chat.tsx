@@ -156,7 +156,7 @@ export async function streamApi<T>(
 // ==========================================
 // A SIMPLE MARKDOWN PARSER COMPONENT
 // ==========================================
-function SimpleMarkdownRenderer({ text }: { text: string }) {
+export function SimpleMarkdownRenderer({ text }: { text: string }) {
   const lines = text.split("\n");
 
   return (

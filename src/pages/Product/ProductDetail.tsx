@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { productService } from "../../api/product";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { SimpleMarkdownRenderer } from "../Chat/Chat";
 import {
   BarChart,
   Bar,
@@ -78,6 +79,7 @@ export default function ProductDashboard() {
     { id: "competitor", label: "Competitor Analysis" },
     { id: "citation", label: "Citation Intelligence" },
     { id: "recommendations", label: "Recommendations" },
+    { id: "tips", label: "Suggestions" },
   ];
 
   const handleTabChange = (tabId: string) => {
@@ -276,6 +278,9 @@ export default function ProductDashboard() {
           )}
           {activeTab === "recommendations" && (
             <RecommendationsTabContent data={tabData} isLoading={isLoading} />
+          )}
+          {activeTab === "tips" && (
+            <TipsTabContent data={tabData} isLoading={isLoading} />
           )}
         </main>
       </div>
@@ -809,6 +814,147 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
                   </div>
                 </div>
               </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export interface ChatSession {
+  chat_id: number;
+  tenant_id: number;
+  product_id: number;
+  model_choice: string;
+  created_at: string;
+  updated_at: string;
+  final_optimization_report: string;
+}
+
+export interface TabData {
+  total_chats: number;
+  chats: ChatSession[];
+}
+
+export interface TipsTabProps {
+  data?: TabData;
+  isLoading?: boolean;
+}
+
+export function TipsTabContent({ data, isLoading = false }: TipsTabProps) {
+  // Explicitly type the accordion state map
+  console.log("data", data);
+  const [openChats, setOpenChats] = useState<Record<number, boolean>>({});
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Safely extract chat list and total count
+  const chatList: ChatSession[] = data?.chats ?? [];
+
+  if (chatList.length === 0) {
+    return (
+      <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500 shadow-sm">
+        No optimization reports available for this product.
+      </div>
+    );
+  }
+
+  const toggleChat = (chatId: number): void => {
+    setOpenChats((prev) => ({
+      ...prev,
+      [chatId]: !prev[chatId],
+    }));
+  };
+
+  const getModelBadge = (model: string): string => {
+    const formatted = model.replace("LLMModels.", "").toUpperCase();
+    switch (formatted) {
+      case "GPT":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "GEMINI":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "CLAUDE":
+        return "bg-amber-50 text-amber-700 border-amber-200";
+      default:
+        return "bg-purple-50 text-purple-700 border-purple-200";
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Chat Sessions */}
+      <div className="space-y-4">
+        {chatList.map((chat: ChatSession) => {
+          const isOpen: boolean = openChats[chat.chat_id] ?? true;
+          const modelName: string = chat.model_choice.replace("LLMModels.", "");
+
+          return (
+            <div
+              key={chat.chat_id}
+              className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden"
+            >
+              {/* Session Header */}
+              <div
+                onClick={() => toggleChat(chat.chat_id)}
+                className="p-4 bg-slate-50/50 hover:bg-slate-50 cursor-pointer flex items-center justify-between border-b border-slate-100 transition"
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`text-[12px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${getModelBadge(
+                      chat.model_choice,
+                    )}`}
+                  >
+                    {modelName}
+                  </span>
+                  <span className="text-xs font-medium text-slate-600">
+                    Session{" "}
+                    <span className="font-mono text-slate-900">
+                      #{chat.chat_id}
+                    </span>
+                  </span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-xs text-slate-400">
+                    {new Date(chat.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="text-[12px] text-slate-400 font-bold uppercase">
+                  {isOpen ? "Hide Report" : "Show Report"}
+                </div>
+              </div>
+
+              {/* Optimization Report Area */}
+              {isOpen && (
+                <div className="p-5 bg-white">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-4 w-1 bg-indigo-500 rounded-full"></div>
+                    <h4 className="text-sm font-bold text-slate-800">
+                      Final Optimization Report
+                    </h4>
+                  </div>
+
+                  {/* <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap font-sans">
+                    {chat.final_optimization_report}
+                  </div> */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-sm text-slate-700 font-sans prose prose-slate max-w-none">
+                    <SimpleMarkdownRenderer
+                      text={chat.final_optimization_report}
+                    />
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400">
+                    <span>
+                      Last Updated: {new Date(chat.updated_at).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
