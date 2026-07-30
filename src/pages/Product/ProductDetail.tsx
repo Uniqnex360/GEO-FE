@@ -79,7 +79,7 @@ export default function ProductDashboard() {
     { id: "competitor", label: "Competitor Analysis" },
     { id: "citation", label: "Citation Intelligence" },
     { id: "recommendations", label: "Recommendations" },
-    { id: "tips", label: "Suggestions" },
+    // { id: "tips", label: "Suggestions" },
   ];
 
   const handleTabChange = (tabId: string) => {
@@ -660,6 +660,7 @@ interface ActionItem {
   type: string;
   effort: string;
   title: string;
+  solution: string;
   model: string;
   competitor_products?: CompetitorProduct[]; // Added new JSON array structure
   competitors?: Competitor[]; // Retained legacy fallbacks
@@ -710,41 +711,85 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
           return (
             <div
               key={index}
-              className="border border-slate-100 rounded-xl p-4 hover:border-slate-200 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
+              className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all space-y-4"
             >
-              {/* Left Content Wrapper */}
-              <div className="space-y-2 flex-1 min-w-0">
+              {/* Top Header Bar: Badges & Impact Meter */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                {/* Metadata Badges */}
                 <div className="flex flex-wrap items-center gap-2">
                   <span
-                    className={`text-[10px] font-bold text-white uppercase px-2 py-0.5 rounded tracking-wide ${getActionColor(item.type)}`}
+                    className={`text-[10px] font-bold text-white uppercase px-2.5 py-0.5 rounded-md tracking-wide ${getActionColor(
+                      item.type,
+                    )}`}
                   >
                     {item.type}
                   </span>
-                  <span className="bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded capitalize">
-                    {item.effort}
+
+                  <span className="bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded-md capitalize">
+                    {item.effort} Effort
                   </span>
+
                   {item.model && (
-                    <span className="bg-purple-50 text-purple-600 border border-purple-100 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                    <span className="bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase">
                       {item.model.replace("LLMModels.", "")}
                     </span>
                   )}
+
                   {item.query_optimization_tag && (
-                    <span className="bg-green-50 text-green-600 border border-green-100 text-[10px] font-bold px-2 py-0.5 rounded">
+                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
                       {item.query_optimization_tag}
                     </span>
                   )}
                 </div>
 
-                {/* Title */}
-                <h4 className="text-sm font-bold text-slate-900 break-words">
-                  {item.title}
-                </h4>
+                {/* Impact Meter */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    Impact
+                  </span>
+                  <div className="w-20 bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min(item.impact * 10, 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-bold text-slate-800 min-w-[16px] text-right">
+                    {item.impact}
+                  </span>
+                </div>
+              </div>
 
-                {/* Competitor Products List with Links */}
+              {/* Card Body */}
+              <div className="space-y-3">
+                {/* Strategy / Title */}
+                {item.title && (
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                      Optimization Strategy
+                    </span>
+                    <p className="text-sm font-medium text-slate-900 leading-relaxed break-words">
+                      {item.title}
+                    </p>
+                  </div>
+                )}
+
+                {/* Copy-pasteable Solution */}
+                {item.solution && (
+                  <div className="bg-slate-50 border border-slate-200/80 rounded-lg p-3 space-y-1.5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 block">
+                      Solution
+                    </span>
+                    <div className="bg-white border border-slate-200 rounded-md p-3 text-xs font-mono text-slate-800 break-words select-all leading-relaxed shadow-inner">
+                      {item.solution}
+                    </div>
+                  </div>
+                )}
+
+                {/* Competitor Products List */}
                 {hasCompetitorProducts && (
-                  <div className="text-xs text-slate-500 space-y-1">
-                    <span className="font-medium text-slate-400 block mb-0.5">
-                      Competitor Products:
+                  <div className="pt-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                      Competitor Benchmarks
                     </span>
                     <div className="flex flex-wrap gap-2">
                       {item.competitor_products!.map((product, pIdx) => (
@@ -753,18 +798,18 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
                           href={product.product_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-blue-600 hover:text-blue-800 text-xs font-medium px-2.5 py-1 rounded-md transition group"
+                          className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-blue-600 hover:text-blue-800 text-xs font-medium px-2.5 py-1.5 rounded-md transition group"
                         >
-                          <span className="truncate max-w-[280px]">
+                          <span className="truncate max-w-[240px]">
                             {product.product_name || product.competitor_name}
                           </span>
                           {product.price && (
-                            <span className="text-[10px] bg-slate-200/70 text-slate-700 px-1.5 py-0.2 rounded font-semibold">
+                            <span className="text-[10px] bg-slate-200/80 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
                               {product.price}
                             </span>
                           )}
                           <svg
-                            className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition"
+                            className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition shrink-0"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -782,37 +827,19 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
                   </div>
                 )}
 
-                {/* Fallback to Legacy Competitors string if competitor_products isn't available */}
+                {/* Legacy Competitors Fallback */}
                 {!hasCompetitorProducts && hasLegacyCompetitors && (
-                  <p className="text-xs text-slate-400 break-words">
-                    Competitors:{" "}
-                    <strong className="text-slate-600">
+                  <div className="pt-1 text-xs text-slate-500">
+                    <span className="font-semibold text-slate-400">
+                      Competitors:{" "}
+                    </span>
+                    <span className="text-slate-700 font-medium">
                       {item
                         .competitors!.map((c) => c.competitor_name)
                         .join(", ")}
-                    </strong>
-                  </p>
-                )}
-              </div>
-
-              {/* Impact Meter */}
-              <div className="flex items-center gap-4 shrink-0">
-                <div className="text-right">
-                  <span className="text-[10px] text-slate-400 block font-medium">
-                    Impact
-                  </span>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <div className="w-24 bg-slate-100 h-2 rounded-full overflow-hidden">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${item.impact * 10}%` }} // Adjusted multiplier assuming impact scale of 0-10
-                      ></div>
-                    </div>
-                    <span className="text-sm font-black text-slate-700">
-                      {item.impact}
                     </span>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           );
