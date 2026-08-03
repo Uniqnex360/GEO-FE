@@ -110,7 +110,6 @@ class ProductService {
    * Fetches a paginated sequence of product schemas filtered by search criteria and tenant mapping
    */
   async getProducts(params?: GetProductsParams): Promise<ProductList> {
-    console.log("parmas", params);
     const res = await api.get<ProductList>(ENDPOINTS.PRODUCT_LIST, {
       params, // Axios binds these directly to the URL string context automatically (?page=X&tenant_id=Y)
     });

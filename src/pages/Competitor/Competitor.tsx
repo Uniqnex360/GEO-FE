@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSelector } from "react-redux";
 import {
   ResponsiveContainer,
   XAxis,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 
 // Importing your custom AppTable reusable layout
+import { selectGlobalProjectId } from "../../store/projectSlice";
 import AppTable from "../../components/Common/AppTable";
 
 // Assuming your service runner layer is mapped here
@@ -63,10 +65,11 @@ interface CompetitorIntelligenceResponse {
 }
 
 export default function CompetitorIntelligence() {
-
   // State states for managing AppTable sorting parameters locally
   const [sortKey, setSortKey] = useState<string>("sov_visibility");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  const reduxProjectId = useSelector(selectGlobalProjectId);
 
   // ------------------------------------------------------------------
   // Core API Binding via TanStack Query
@@ -75,8 +78,12 @@ export default function CompetitorIntelligence() {
     CompetitorIntelligenceResponse,
     Error
   >({
-    queryKey: ["competitorIntelligence"],
-    queryFn: () => competitorService.getDetail(),
+    queryKey: ["competitorIntelligence", reduxProjectId],
+    queryFn: () =>
+      competitorService.getDetail({
+        //@ts-ignore
+        tenant_id: reduxProjectId ? Number(reduxProjectId) : undefined,
+      }),
     retry: 1,
   });
 

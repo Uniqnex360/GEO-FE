@@ -30,9 +30,11 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+import { useSelector } from "react-redux";
 
 // Assuming your service layer is located here
 import { citationService } from "../../api/citation";
+import { selectGlobalProjectId } from "../../store/projectSlice";
 
 // ------------------------------------------------------------------
 // TypeScript Interfaces Matching the API Payload Contract
@@ -95,6 +97,8 @@ export default function CitationIntelligence() {
   //@ts-ignore
   const [currentPage, setCurrentPage] = useState(1);
 
+  const reduxProjectId = useSelector(selectGlobalProjectId);
+
   // ------------------------------------------------------------------
   // Core API Binding via TanStack Query
   // ------------------------------------------------------------------
@@ -102,9 +106,12 @@ export default function CitationIntelligence() {
     CitationDashboardResponse,
     Error
   >({
-    queryKey: ["citationDashboard", id, currentPage],
+    queryKey: ["citationDashboard", id, currentPage, reduxProjectId],
     // Passing pagination indices safely to your endpoint service runner
-    queryFn: () => citationService.getDetail(),
+    queryFn: () =>
+      citationService.getDetail({
+        tenant_id: reduxProjectId ? Number(reduxProjectId) : undefined,
+      }),
     retry: 1,
   });
 
@@ -345,7 +352,7 @@ export default function CitationIntelligence() {
                   paddingAngle={4}
                   dataKey="value"
                 >
-                    {/* @ts-ignore */}
+                  {/* @ts-ignore */}
                   {pieChartData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
