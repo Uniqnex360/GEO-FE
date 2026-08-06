@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import {
   FiMenu,
   FiHome,
@@ -35,21 +35,47 @@ export interface Project {
   platforms: string[];
 }
 
-const navItems = [
+// Updated NavItem type to support nested children
+type NavItem = {
+  label: string;
+  icon: React.ElementType;
+  to?: string;
+  children?: { to: string; label: string }[];
+};
+
+const navItems: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: FiHome },
   { to: "/admin/project", label: "Projects", icon: FiPackage },
   { to: "/admin/category", label: "Category", icon: FiLayers },
-  { to: "/admin/brand", label: "Brands", icon: FiBriefcase },
+  {
+    label: "Brand",
+    icon: FiBriefcase,
+    children: [
+      { to: "/admin/brand", label: "List" },
+      { to: "/admin/brand-chat", label: "Chat" },
+      { to: "/admin/brand-chat/list", label: "Brand Chat List" },
+    ],
+  },
   { to: "/admin/product", label: "Products", icon: FiPackage },
   { to: "/admin/chat", label: "Chat", icon: FiFileText },
   { to: "/admin/ai-engine", label: "AI Engine", icon: FiActivity },
   { to: "/admin/citation", label: "Citation", icon: FiBarChart2 },
   { to: "/admin/competitor", label: "Competitor Intelligence", icon: FiTarget },
   { to: "/admin/settings", label: "Settings", icon: FiSettings },
+  // {
+  //   label: "Settings",
+  //   icon: FiSettings,
+  //   children: [
+  //     { to: "/admin/settings/general", label: "General" },
+  //     { to: "/admin/settings/team", label: "Team Members" },
+  //     { to: "/admin/settings/billing", label: "Billing" },
+  //   ],
+  // },
 ];
 
 export default function Layout() {
   const [collapsed, setCollapsed] = useState(false);
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const location = useLocation();
   const dispatch = useDispatch();
 
@@ -90,6 +116,12 @@ export default function Layout() {
     dispatch(setGlobalProjectId(id));
   };
 
+  const toggleMenu = (label: string) => {
+    setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
+    // Automatically expand the sidebar if a user clicks a nested menu icon while collapsed
+    if (collapsed) setCollapsed(false);
+  };
+
   // Find the exact metadata object matching our global context
   const activeProject = projects.find((p) => p.id === reduxProjectId);
 
@@ -110,34 +142,99 @@ export default function Layout() {
 
         {/* Navigation with vertical scrolling */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-2 scrollbar-thin scrollbar-thumb-gray-300">
-          {navItems.map(({ to, label, icon: Icon }) => {
-            const active = location.pathname === to;
+          {navItems.map((item) => {
+            const hasChildren = !!item.children;
+            // A parent is considered active if the current route matches its link OR any of its children's links
+            const isActive = item.to
+              ? location.pathname === item.to
+              : item.children?.some((child) => location.pathname === child.to);
+
+            const isOpen = openMenus[item.label];
 
             return (
-              <Link
-                key={to}
-                to={to}
-                className={`relative flex items-center 
-                  ${collapsed ? "justify-center" : "justify-start"}
-                  gap-3 px-4 py-3 rounded-lg transition-all font-medium
-                  ${
-                    active
-                      ? "bg-gray-100 text-blue-600"
-                      : "text-slate-600 hover:bg-gray-50 hover:text-slate-900"
-                  }`}
-              >
-                {active && (
-                  <span className="absolute left-0 top-0 h-full w-1 bg-blue-500 rounded-r" />
+              <div key={item.label} className="flex flex-col">
+                {hasChildren ? (
+                  <button
+                    onClick={() => toggleMenu(item.label)}
+                    className={`relative w-full flex items-center 
+                      ${collapsed ? "justify-center" : "justify-between"}
+                      px-4 py-3 rounded-lg transition-all font-medium
+                      ${
+                        isActive
+                          ? "bg-gray-100 text-blue-600"
+                          : "text-slate-600 hover:bg-gray-50 hover:text-slate-900"
+                      }`}
+                  >
+                    {isActive && (
+                      <span className="absolute left-0 top-0 h-full w-1 bg-blue-500 rounded-r" />
+                    )}
+                    <div className="flex items-center gap-3">
+                      <item.icon
+                        className={`text-xl min-w-[20px] ${isActive ? "text-blue-600" : "text-slate-500"}`}
+                      />
+                      {!collapsed && (
+                        <span className="text-sm whitespace-nowrap">
+                          {item.label}
+                        </span>
+                      )}
+                    </div>
+                    {!collapsed &&
+                      (isOpen ? (
+                        <ChevronDown size={16} />
+                      ) : (
+                        <ChevronRight size={16} />
+                      ))}
+                  </button>
+                ) : (
+                  <Link
+                    to={item.to!}
+                    className={`relative flex items-center 
+                      ${collapsed ? "justify-center" : "justify-start"}
+                      gap-3 px-4 py-3 rounded-lg transition-all font-medium
+                      ${
+                        isActive
+                          ? "bg-gray-100 text-blue-600"
+                          : "text-slate-600 hover:bg-gray-50 hover:text-slate-900"
+                      }`}
+                  >
+                    {isActive && (
+                      <span className="absolute left-0 top-0 h-full w-1 bg-blue-500 rounded-r" />
+                    )}
+
+                    <item.icon
+                      className={`text-xl min-w-[20px] ${isActive ? "text-blue-600" : "text-slate-500"}`}
+                    />
+
+                    {!collapsed && (
+                      <span className="text-sm whitespace-nowrap">
+                        {item.label}
+                      </span>
+                    )}
+                  </Link>
                 )}
 
-                <Icon
-                  className={`text-xl min-w-[20px] ${active ? "text-blue-600" : "text-slate-500"}`}
-                />
-
-                {!collapsed && (
-                  <span className="text-sm whitespace-nowrap">{label}</span>
+                {/* Render nested children if expanded and not collapsed */}
+                {hasChildren && isOpen && !collapsed && (
+                  <div className="flex flex-col mt-1 ml-10 space-y-1">
+                    {item.children!.map((child) => {
+                      const isChildActive = location.pathname === child.to;
+                      return (
+                        <Link
+                          key={child.to}
+                          to={child.to}
+                          className={`text-sm px-4 py-2 rounded-lg transition-all ${
+                            isChildActive
+                              ? "text-blue-600 font-semibold"
+                              : "text-slate-500 hover:text-slate-900 hover:bg-gray-50"
+                          }`}
+                        >
+                          {child.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 )}
-              </Link>
+              </div>
             );
           })}
         </nav>

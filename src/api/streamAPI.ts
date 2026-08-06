@@ -1,11 +1,9 @@
 import axios from "axios";
 import { tokenStorage } from "../helpers/auth";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/";
 
-// --------------------------
-// Refresh state
-// --------------------------
 let isRefreshing = false;
 
 let queue: {
@@ -13,9 +11,6 @@ let queue: {
   reject: (err: any) => void;
 }[] = [];
 
-// --------------------------
-// Queue processor
-// --------------------------
 const processQueue = (error: any, token: string | null = null) => {
   queue.forEach((promise) => {
     if (token) {
@@ -24,13 +19,9 @@ const processQueue = (error: any, token: string | null = null) => {
       promise.reject(error);
     }
   });
-
   queue = [];
 };
 
-// --------------------------
-// Refresh token helper
-// --------------------------
 async function refreshAccessToken(): Promise<string> {
   const refreshToken = tokenStorage.getRefresh();
 
@@ -42,71 +33,65 @@ async function refreshAccessToken(): Promise<string> {
     refresh_token: refreshToken,
   });
 
-  const access = res.data.access_token;
-  const refresh = res.data.refresh_token;
+  const access = res.data?.access_token;
+  // Keep existing refresh token if the API does not rotate it
+  const refresh = res.data?.refresh_token || refreshToken;
+
+  if (!access) {
+    throw new Error("No access token in refresh response");
+  }
 
   tokenStorage.setTokens(access, refresh);
-
   return access;
 }
 
-// --------------------------
-// Main reusable stream API
-// --------------------------
 export async function streamApi<T>(
   endpoint: string,
   body: any,
   onMessage: (data: T) => void,
 ) {
-  let token = tokenStorage.getAccess();
+  const token = tokenStorage.getAccess();
+
   //@ts-ignore
-  async function executeRequest(accessToken?: string) {
+  async function executeRequest(accessToken?: string, hasRetried = false) {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: "POST",
-
       headers: {
         "Content-Type": "application/json",
-
         ...(accessToken && {
           Authorization: `Bearer ${accessToken}`,
         }),
       },
-
       body: JSON.stringify(body),
     });
 
-    // --------------------------
-    // Handle token expiry
-    // --------------------------
-
     if (response.status === 401) {
+      // Already refreshed once for this call — do not loop or wipe session
+      // unless refresh itself fails below.
+      if (hasRetried) {
+        throw new Error("Unauthorized after token refresh");
+      }
+
       if (isRefreshing) {
         return new Promise<string>((resolve, reject) => {
-          queue.push({
-            resolve,
-            reject,
-          });
-        }).then((newToken) => executeRequest(newToken));
+          queue.push({ resolve, reject });
+        }).then((newToken) => executeRequest(newToken, true));
       }
 
       isRefreshing = true;
 
       try {
         const newToken = await refreshAccessToken();
-
         processQueue(null, newToken);
-
-        return executeRequest(newToken);
+        // Release the lock before the long-lived stream starts
+        isRefreshing = false;
+        return executeRequest(newToken, true);
       } catch (err) {
         processQueue(err, null);
-
-        tokenStorage.clear();
-
-        window.location.href = "/login";
-
-        throw err;
-      } finally {
         isRefreshing = false;
+        tokenStorage.clear();
+        window.location.href = "/login";
+        throw err;
       }
     }
 
@@ -118,35 +103,22 @@ export async function streamApi<T>(
       throw new Error("No response stream");
     }
 
-    // --------------------------
-    // Stream reader
-    // --------------------------
-
     const reader = response.body.getReader();
-
     const decoder = new TextDecoder();
-
     let buffer = "";
 
     while (true) {
       const { value, done } = await reader.read();
-
       if (done) break;
 
-      buffer += decoder.decode(value, {
-        stream: true,
-      });
-
+      buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split("\n");
-
       buffer = lines.pop() ?? "";
 
       for (const line of lines) {
         if (!line.trim()) continue;
-
         try {
           const parsed = JSON.parse(line);
-
           onMessage(parsed);
         } catch (err) {
           console.error("Stream parse error", err);

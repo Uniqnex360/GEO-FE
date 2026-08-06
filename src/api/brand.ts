@@ -6,6 +6,8 @@ const ENDPOINTS = {
   BRAND_UPDATE: `${API_V1}brand/update`,
   BRAND_DELETE: `${API_V1}brand/delete`,
   BRAND_META_LIST: `${API_V1}brand/meta-list/`,
+  BRAND_CHAT_LIST: `${API_V1}brand/summary/`,
+  BRAND_DETAIL: `${API_V1}brand/`, // Added endpoint base for details
 } as const;
 
 export interface Brand {
@@ -70,6 +72,32 @@ class BrandService {
 
   async deleteBrand(id: string): Promise<void> {
     await api.delete(`${ENDPOINTS.BRAND_DELETE}/${id}/`);
+  }
+
+  async getBrandAnalyticsList(params?: {
+    tenant_id?: number;
+    page?: number;
+    limit?: number;
+    search?: string;
+    sort_by?: string;
+    sort_order?: "asc" | "desc";
+  }): Promise<any> {
+    const res = await api.get(ENDPOINTS.BRAND_CHAT_LIST, { params });
+    return res.data;
+  }
+
+  // FIXED: Correct TypeScript parameter typing & endpoint targeting
+  async getBrandAnalyticsDetail({
+    tenant_id,
+    brand_id,
+  }: {
+    tenant_id?: number;
+    brand_id: number | string;
+  }): Promise<any> {
+    const res = await api.get(`${ENDPOINTS.BRAND_DETAIL}${brand_id}/detail/`, {
+      params: { tenant_id },
+    });
+    return res.data;
   }
 }
 
