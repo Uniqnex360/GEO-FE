@@ -22,6 +22,7 @@ import {
   Cell,
 } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import ProdoctGenerateContent from "./ProductGenerateContent";
 
 export default function ProductDashboard() {
   const { id } = useParams();
@@ -68,6 +69,8 @@ export default function ProductDashboard() {
   // @ts-ignore
   const { productInfo, tabData } = dashboardData || {};
 
+  console.log("product info", productInfo);
+
   useEffect(() => {
     if (productInfo) {
       setCachedProductInfo(productInfo);
@@ -79,6 +82,7 @@ export default function ProductDashboard() {
     { id: "competitor", label: "Competitor Analysis" },
     { id: "citation", label: "Citation Intelligence" },
     { id: "recommendations", label: "Recommendations" },
+    { id: "generate_content", label: "Generate Content" },
     // { id: "tips", label: "Suggestions" },
   ];
 
@@ -278,6 +282,9 @@ export default function ProductDashboard() {
           )}
           {activeTab === "tips" && (
             <TipsTabContent data={tabData} isLoading={isLoading} />
+          )}
+          {activeTab === "generate_content" && (
+            <ProdoctGenerateContent productInfo={productInfo} />
           )}
         </main>
       </div>

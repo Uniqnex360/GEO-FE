@@ -7,6 +7,8 @@ const ENDPOINTS = {
   PRODUCT_DELETE: `${API_V1}product/delete`,
   PRODUCT_DETAIL: `${API_V1}product/detail`,
   PRODUCT_DETAIL_V2: `${API_V1}product/detail/v2`,
+  REGENERATE_AI_CONTENT: `${API_V1}generate_content/regenerate-ai-contents/`,
+  UPDATE_PRODUCT_AI_CONTENT: `${API_V1}generate_content/update-product-ai-content/`,
 } as const;
 
 // ==========================================
@@ -85,9 +87,9 @@ export interface ProductList {
     page: number;
     limit: number;
     total: number;
-    total_pages: number; // Added to match template formatting structure
+    total_pages: number;
   };
-  product_ids: number[]
+  product_ids: number[];
 }
 
 // Interface for dynamic parameters passing through components
@@ -101,6 +103,17 @@ export interface GetProductsParams {
   sort_order?: "asc" | "desc";
 }
 
+// Payload Interfaces for AI Operations
+export interface RegenerateAiContentPayload {
+  product_id: number;
+  [key: string]: unknown;
+}
+
+export interface UpdateProductAiContentPayload {
+  product_id: number;
+  [key: string]: unknown;
+}
+
 // ==========================================
 // API Client Implementation
 // ==========================================
@@ -110,9 +123,7 @@ class ProductService {
    * Fetches a paginated sequence of product schemas filtered by search criteria and tenant mapping
    */
   async getProducts(params?: GetProductsParams): Promise<ProductList> {
-    const res = await api.get<ProductList>(ENDPOINTS.PRODUCT_LIST, {
-      params, // Axios binds these directly to the URL string context automatically (?page=X&tenant_id=Y)
-    });
+    const res = await api.get<ProductList>(ENDPOINTS.PRODUCT_LIST, { params });
     return res.data;
   }
 
@@ -147,6 +158,29 @@ class ProductService {
    */
   async deleteProduct(id: number): Promise<void> {
     await api.delete(`${ENDPOINTS.PRODUCT_DELETE}/${id}/`);
+  }
+
+  /**
+   * Regenerates AI content for a given product payload
+   */
+  async regenerateAiContent<T = unknown>(
+    payload: RegenerateAiContentPayload,
+  ): Promise<T> {
+    const res = await api.post<T>(ENDPOINTS.REGENERATE_AI_CONTENT, payload);
+    return res.data;
+  }
+
+  /**
+   * Updates/applies AI content modifications to a product
+   */
+  async updateProductAiContent<T = unknown>(
+    payload: UpdateProductAiContentPayload,
+  ): Promise<T> {
+    const res = await api.patch<T>(
+      ENDPOINTS.UPDATE_PRODUCT_AI_CONTENT,
+      payload,
+    );
+    return res.data;
   }
 }
 
