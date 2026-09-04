@@ -790,7 +790,7 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
                 )}
 
                 {/* Competitor Products List */}
-                {hasCompetitorProducts && (
+                {/* {hasCompetitorProducts && (
                   <div className="pt-2">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
                       Competitor Benchmarks
@@ -827,6 +827,76 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
                           </svg>
                         </a>
                       ))}
+                    </div>
+                  </div>
+                )} */}
+                {/* Competitor Products List */}
+                {hasCompetitorProducts && (
+                  <div className="pt-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                      Competitor Benchmarks
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {item.competitor_products!.map((product, pIdx) => {
+                        const hasUrl = Boolean(
+                          product.product_url &&
+                          product.product_url.trim() !== "",
+                        );
+
+                        // Common Inner Content
+                        const badgeContent = (
+                          <>
+                            <span className="truncate max-w-[240px]">
+                              {product.product_name || product.competitor_name}
+                            </span>
+                            {product.price && (
+                              <span className="text-[10px] bg-slate-200/80 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
+                                {product.price}
+                              </span>
+                            )}
+                            {hasUrl && (
+                              <svg
+                                className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition shrink-0"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                />
+                              </svg>
+                            )}
+                          </>
+                        );
+
+                        // Render external link if URL exists
+                        if (hasUrl) {
+                          return (
+                            <a
+                              key={pIdx}
+                              href={product.product_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-blue-600 hover:text-blue-800 text-xs font-medium px-2.5 py-1.5 rounded-md transition group"
+                            >
+                              {badgeContent}
+                            </a>
+                          );
+                        }
+
+                        // Fallback: Non-clickable tag when URL is missing
+                        return (
+                          <div
+                            key={pIdx}
+                            className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium px-2.5 py-1.5 rounded-md cursor-default"
+                          >
+                            {badgeContent}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

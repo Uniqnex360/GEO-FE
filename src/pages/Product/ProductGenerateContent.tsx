@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Sparkles,
+  Wand2,
   X,
   Loader2,
   Check,
-  Edit2,
-  Tag,
+  Pencil,
+  Save,
   Lightbulb,
 } from "lucide-react";
 import { productService } from "../../api/product";
@@ -21,6 +21,21 @@ const QUICK_TAGS = [
 ];
 
 const MAX_REWRITE_LIMIT = 3;
+
+const COLORS = {
+  page: "#f4f5f0",
+  card: "#ffffff",
+  border: "#e4e6df",
+  chipBg: "#eef1e6",
+  chipText: "#4b5442",
+  finalBorder: "#cfe0d2",
+  applyBg: "#1b4d3e",
+  applyBgHover: "#143a2f",
+  generateBg: "#b8720f",
+  generateBgHover: "#9c6009",
+  muted: "#8a8f80",
+  tabActive: "#1b4d3e",
+};
 
 export interface ProductInfo {
   id: number;
@@ -48,7 +63,30 @@ interface SelectedFeatureBullet {
   versionTag: string; // e.g. "V1"
 }
 
+type FieldKey = "title" | "features" | "description";
 
+const FIELD_META: Record<
+  FieldKey,
+  { label: string; singular: string; tabLabel: string }
+> = {
+  title: {
+    label: "Product Title",
+    singular: "title",
+    tabLabel: "Product title",
+  },
+  features: {
+    label: "Features",
+    singular: "feature set",
+    tabLabel: "Features",
+  },
+  description: {
+    label: "Description",
+    singular: "description",
+    tabLabel: "Description",
+  },
+};
+
+const FIELD_KEYS: FieldKey[] = ["title", "features", "description"];
 
 export default function ProductGenerateContent({
   productInfo,
@@ -65,6 +103,9 @@ export default function ProductGenerateContent({
   const titleCount = productInfo.ai_title_rewrite_count ?? 0;
   const featuresCount = productInfo.ai_features_rewrite_count ?? 0;
   const descriptionCount = productInfo.ai_description_rewrite_count ?? 0;
+
+  const [tabIndex, setTabIndex] = useState(0);
+  const field = FIELD_KEYS[tabIndex];
 
   // Title & Description State
   const [selectedTitleKey, setSelectedTitleKey] = useState<string>("v1");
@@ -85,12 +126,33 @@ export default function ProductGenerateContent({
     SelectedFeatureBullet[]
   >([]);
 
-  // Edit states for inline updates
-  //@ts-ignore
-  const [editingVersion, setEditingVersion] = useState<{
-    field: string;
-    key: string;
-  } | null>(null);
+  // Inline edit state (per field, keyed by version key e.g. "v1")
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>("");
+
+  // Generate panel state (per-field custom prompt + quick tag)
+  const [customPrompt, setCustomPrompt] = useState<Record<FieldKey, string>>({
+    title: "",
+    features: "",
+    description: "",
+  });
+
+  const rewriteCounts: Record<FieldKey, number> = {
+    title: titleCount,
+    features: featuresCount,
+    description: descriptionCount,
+  };
+
+  const versionCount: Record<FieldKey, number> = {
+    title: Object.keys(titleVersions).length,
+    features: Object.keys(featureVersions).length,
+    description: Object.keys(descVersions).length,
+  };
+
+  const generationsLeft = Math.max(0, MAX_REWRITE_LIMIT - versionCount[field]);
+  const isLimitReached = versionCount[field] >= MAX_REWRITE_LIMIT;
+  const isPromptEmpty =
+    !customPrompt[field] || customPrompt[field].trim() === "";
 
   // Load backend versions into state
   useEffect(() => {
@@ -111,17 +173,12 @@ export default function ProductGenerateContent({
         features.v1.map((bullet) => ({ text: bullet, versionTag: "V1" })),
       );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productInfo]);
 
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selections, setSelections] = useState({
-    title: false,
-    description: false,
-    features: false,
-  });
-  const [selectedTag, setSelectedTag] = useState<string>("");
-  const [customPrompt, setCustomPrompt] = useState<string>("");
+  useEffect(() => {
+    setEditingKey(null);
+  }, [field]);
 
   // Checkbox toggle logic for individual bullets in Key Features
   const handleToggleBullet = (bullet: string, versionKey: string) => {
@@ -184,10 +241,7 @@ export default function ProductGenerateContent({
         setSelectedBullets(newBullets);
       }
 
-      setIsModalOpen(false);
-      setSelections({ title: false, description: false, features: false });
-      setSelectedTag("");
-      setCustomPrompt("");
+      setCustomPrompt((prev) => ({ ...prev, [field]: "" }));
 
       queryClient.invalidateQueries({
         queryKey: ["productDetails", productInfo.id],
@@ -205,542 +259,747 @@ export default function ProductGenerateContent({
     },
   });
 
+  // Generate for the currently active tab only, using the same payload
+  // shape/contract as before (current + all existing versions per field).
   const handleGenerate = () => {
-    const option = [selectedTag, customPrompt].filter(Boolean).join(" - ");
+    if (isLimitReached || isPromptEmpty) return;
+
+    const option = customPrompt[field].trim();
     const payload: any = { product_id: productInfo.id, option };
 
-    if (selections.title)
+    if (field === "title")
       payload.title = { current: currentTitle, ...titleVersions };
-    if (selections.features)
+    if (field === "features")
       payload.features = { current: currentFeatures, ...featureVersions };
-    if (selections.description)
+    if (field === "description")
       payload.description = { current: currentDescription, ...descVersions };
 
     generateMutation.mutate(payload);
   };
 
-  const handleApplyField = (field: "title" | "features" | "description") => {
+  const setQuickTag = (tag: string) => {
+    setCustomPrompt((prev) => ({ ...prev, [field]: tag }));
+  };
+
+  const handleApplyField = (targetField: FieldKey) => {
     const payload: any = { product_id: productInfo.id };
-    if (field === "title") payload.title = finalTitle;
-    if (field === "features")
+    if (targetField === "title") payload.title = finalTitle;
+    if (targetField === "features")
       payload.features = selectedBullets.map((b) => b.text);
-    if (field === "description") payload.description = finalDescription;
+    if (targetField === "description") payload.description = finalDescription;
 
     saveMutation.mutate(payload);
   };
 
-  // Helper calculation for total character counts in features
+  // Inline editing of a specific AI version
+  const startEdit = (vKey: string, value: string | string[]) => {
+    setEditingKey(vKey);
+    setEditValue(Array.isArray(value) ? value.join("\n") : value);
+  };
+
+  const saveEdit = (vKey: string) => {
+    if (field === "title") {
+      const newVal = editValue;
+      setTitleVersions((prev) => ({ ...prev, [vKey]: newVal }));
+      if (selectedTitleKey === vKey) setFinalTitle(newVal);
+    } else if (field === "description") {
+      const newVal = editValue;
+      setDescVersions((prev) => ({ ...prev, [vKey]: newVal }));
+      if (selectedDescKey === vKey) setFinalDescription(newVal);
+    } else if (field === "features") {
+      const newList = editValue
+        .split("\n")
+        .map((item) => item.replace(/^[-•*]\s*/, "").trim())
+        .filter(Boolean);
+      const vTag = vKey.toUpperCase();
+      const oldList = featureVersions[vKey] || [];
+
+      setFeatureVersions((prev) => ({ ...prev, [vKey]: newList }));
+
+      // Keep selection in sync: drop bullets that no longer exist for this
+      // version, keep the ones that still do (matched by text).
+      setSelectedBullets((prev) =>
+        prev
+          .filter((b) => b.versionTag !== vTag || newList.includes(b.text))
+          .concat(
+            newList
+              .filter(
+                (text) =>
+                  oldList.includes(text) &&
+                  !prev.some((b) => b.versionTag === vTag && b.text === text),
+              )
+              .map((text) => ({ text, versionTag: vTag })),
+          ),
+      );
+    }
+
+    setEditingKey(null);
+  };
+
+  // Total character counts in features
   const totalFeatureChars = selectedBullets.reduce(
     (acc, curr) => acc + curr.text.length,
     0,
   );
 
+  const currentValue = useMemo(() => {
+    if (field === "title") return currentTitle;
+    if (field === "description") return currentDescription;
+    return currentFeatures;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [field, currentTitle, currentDescription, currentFeatures]);
+
   return (
-    <div className="mx-auto max-w-6xl space-y-8 p-6 bg-[#f8f9fa] min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
+    <div
+      className="rounded-xl p-4 sm:p-6"
+      style={{ backgroundColor: COLORS.page }}
+    >
+      <div
+        className="font-mono text-[11px] font-semibold tracking-[0.08em]"
+        style={{ color: "#6b7280" }}
+      >
+        CONTENT STUDIO
+      </div>
+
+      <div className="mt-0.5 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            {productInfo.icon} Content Studio
+          <h2 className="text-2xl font-thin" style={{ color: "#111827" }}>
+            {productInfo.icon} Product content
           </h2>
-          <p className="text-sm text-gray-500">
-            {productInfo.brand} | {productInfo.category}
+          <p className="mt-0.5 text-sm" style={{ color: "#6b7280" }}>
+            {productInfo.brand}{" "}
+            {productInfo.brand && productInfo.category ? "|" : ""}{" "}
+            {productInfo.category}
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-indigo-700"
-        >
-          <Sparkles className="mr-2 h-4 w-4" />
-          Generate AI Content
-        </button>
       </div>
 
-      {/* --- Section 1: Product Title --- */}
-      <div className="rounded-xl border bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">Product Title</h3>
-          <span className="text-xs text-gray-400">
-            Rewrites: {titleCount}/{MAX_REWRITE_LIMIT}
-          </span>
-        </div>
+      <p className="mb-2.5 mt-2 text-sm" style={{ color: "#6b7280" }}>
+        Compare your existing content with AI-generated versions, then choose or
+        assemble your final version.
+      </p>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Left Column */}
-          <div className="space-y-4">
-            <div className="rounded-lg border bg-gray-50 p-4 relative">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                CURRENT PRODUCT TITLE
-              </span>
-              <span className="absolute top-3 right-3 rounded bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-600">
-                Existing
-              </span>
-              <p className="mt-2 text-sm text-gray-800">
-                {currentTitle || "No current title"}
-              </p>
-              <div className="mt-3 text-right text-[11px] text-gray-400">
-                {currentTitle.length} characters
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <span className="text-xs font-bold text-gray-900 uppercase">
-                AI Generated Versions
-              </span>
-              {Object.entries(titleVersions).map(([vKey, value]) => (
-                <div
-                  key={vKey}
-                  onClick={() => {
-                    setSelectedTitleKey(vKey);
-                    setFinalTitle(value);
-                  }}
-                  className={`cursor-pointer rounded-lg border p-4 transition-all ${
-                    selectedTitleKey === vKey
-                      ? "border-emerald-600 bg-emerald-50/20 ring-1 ring-emerald-600"
-                      : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="radio"
-                        checked={selectedTitleKey === vKey}
-                        onChange={() => {}}
-                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
-                      />
-                      <span className="font-semibold text-sm capitalize text-gray-800">
-                        {vKey.replace("v", "Version ")}
-                      </span>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingVersion({ field: "title", key: vKey });
-                      }}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <p className="mt-2 text-sm text-gray-800 pl-7">{value}</p>
-                  <span className="mt-2 block text-right text-[11px] text-gray-400">
-                    {value.length} characters
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Column */}
-          <div className="flex flex-col justify-between rounded-lg border border-emerald-200 bg-emerald-50/10 p-5">
-            <div>
-              <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
-                <span className="text-[10px] font-bold text-emerald-900 uppercase tracking-wider">
-                  FINAL PRODUCT TITLE
-                </span>
-                <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                  ✓ PREVIEW
-                </span>
-              </div>
-              <textarea
-                rows={4}
-                value={finalTitle}
-                onChange={(e) => setFinalTitle(e.target.value)}
-                className="mt-3 w-full rounded-md border border-gray-300 p-2 text-sm text-gray-900 focus:border-emerald-500 focus:ring-emerald-500"
+      {/* Tabs */}
+      <div
+        className="mb-4 flex min-h-9 border-b"
+        style={{ borderColor: COLORS.border }}
+        role="tablist"
+      >
+        {FIELD_KEYS.map((key, index) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tabIndex === index}
+            onClick={() => setTabIndex(index)}
+            className="relative min-h-9 px-4 text-sm font-normal transition-colors"
+            style={{
+              color: tabIndex === index ? COLORS.tabActive : COLORS.muted,
+            }}
+          >
+            {FIELD_META[key].tabLabel}
+            {tabIndex === index && (
+              <span
+                className="absolute bottom-[-1px] left-0 right-0 h-0.5"
+                style={{ backgroundColor: COLORS.tabActive }}
               />
-              <span className="text-[11px] text-gray-400">
-                {finalTitle.length} characters
+            )}
+          </button>
+        ))}
+
+        <span
+          className="ml-auto self-center font-mono text-xs"
+          style={{ color: "#6b7280" }}
+        >
+          Rewrites: {rewriteCounts[field]}/{MAX_REWRITE_LIMIT}
+        </span>
+      </div>
+
+      <div className="flex flex-col items-start gap-4 md:flex-row">
+        {/* LEFT COLUMN */}
+        <div className="w-full flex-1">
+          {/* Current */}
+          <div
+            className="mb-4 rounded-lg border p-4"
+            style={{ backgroundColor: COLORS.card, borderColor: COLORS.border }}
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <div
+                className="font-mono text-[11px] font-semibold tracking-[0.08em]"
+                style={{ color: "#6b7280" }}
+              >
+                CURRENT {FIELD_META[field].label.toUpperCase()}
+              </div>
+
+              <span
+                className="rounded-[5px] px-2 py-0.5 font-mono text-[11px] font-semibold"
+                style={{
+                  backgroundColor: COLORS.chipBg,
+                  color: COLORS.chipText,
+                }}
+              >
+                Existing
               </span>
             </div>
 
-            <button
-              onClick={() => handleApplyField("title")}
-              disabled={saveMutation.isPending || !finalTitle}
-              className="mt-4 flex w-full items-center justify-center rounded-md bg-[#1d4ed8] py-2.5 text-sm font-medium text-white shadow hover:bg-blue-800 disabled:opacity-50"
-            >
-              {saveMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Check className="mr-2 h-4 w-4" />
-              )}
-              Apply ✓
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* --- Section 2: Key Features (Checkbox Bullet Selector) --- */}
-      <div className="rounded-xl border bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">Key Features</h3>
-          <span className="text-xs text-gray-400">
-            Rewrites: {featuresCount}/{MAX_REWRITE_LIMIT}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Left Column: Multi-select Bullet List */}
-          <div className="space-y-4">
-            <div className="rounded-lg border bg-gray-50 p-4 relative">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                CURRENT FEATURES
-              </span>
-              <span className="absolute top-3 right-3 rounded bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-600">
-                Existing
-              </span>
-              <ul className="mt-2 space-y-1 text-sm text-gray-800">
-                {currentFeatures.length > 0 ? (
-                  currentFeatures.map((f, i) => <li key={i}>• {f}</li>)
+            {field === "features" ? (
+              <ul className="m-0 pl-5">
+                {(currentFeatures || []).length > 0 ? (
+                  currentFeatures.map((feature, index) => (
+                    <li
+                      key={index}
+                      className="mb-1.5 text-sm leading-[1.5]"
+                      style={{ color: "#374151" }}
+                    >
+                      {feature}
+                    </li>
+                  ))
                 ) : (
-                  <span className="text-gray-400 text-sm">
+                  <li
+                    className="list-none text-sm italic"
+                    style={{ color: "#9ca3af" }}
+                  >
                     No current features available.
-                  </span>
+                  </li>
                 )}
               </ul>
-              <div className="mt-3 text-right text-[11px] text-gray-400">
-                {currentFeatures.length} bullets
+            ) : (
+              <div
+                className="whitespace-pre-line text-sm leading-[1.5]"
+                style={{ color: "#374151" }}
+              >
+                {(currentValue as string) || (
+                  <span className="italic" style={{ color: "#9ca3af" }}>
+                    Not set.
+                  </span>
+                )}
               </div>
+            )}
+
+            <div
+              className="mt-1.5 text-right font-mono text-[11px]"
+              style={{ color: "#6b7280" }}
+            >
+              {field === "features"
+                ? `${(currentFeatures || []).length} bullets`
+                : `${((currentValue as string) || "").length} characters`}
             </div>
+          </div>
 
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-gray-900 uppercase">
-                  AI Generated Versions
-                </span>
-                <span className="text-xs text-gray-400">
-                  {featuresCount}/{MAX_REWRITE_LIMIT} generated
-                </span>
-              </div>
+          <div className="mb-1 flex items-center justify-between">
+            <h3 className="text-[15px] font-bold">AI Generated Versions</h3>
+            <span className="font-mono text-xs" style={{ color: "#6b7280" }}>
+              {versionCount[field]}/{MAX_REWRITE_LIMIT} generated
+            </span>
+          </div>
 
-              {Object.entries(featureVersions).map(([vKey, list]) => {
-                const vTag = vKey.toUpperCase();
-                const totalChars = list.reduce(
-                  (acc, curr) => acc + curr.length,
-                  0,
-                );
+          {field === "title" &&
+            Object.entries(titleVersions).map(([vKey, value]) => {
+              const isEditing = editingKey === vKey;
+              return (
+                <div
+                  key={vKey}
+                  className="mb-3 rounded-lg border p-4"
+                  style={{
+                    backgroundColor: COLORS.card,
+                    borderColor: COLORS.border,
+                  }}
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <span
+                      className="text-sm font-bold"
+                      style={{ color: COLORS.applyBg }}
+                    >
+                      {vKey.replace("v", "Version ")}
+                    </span>
+                    {!isEditing && (
+                      <button
+                        type="button"
+                        aria-label={`Edit ${vKey}`}
+                        onClick={() => startEdit(vKey, value)}
+                        className="rounded-md p-1.5 transition hover:bg-gray-100"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                    )}
+                  </div>
 
-                return (
-                  <div
-                    key={vKey}
-                    className="rounded-lg border border-gray-200 bg-white p-4"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-bold text-sm text-emerald-900 capitalize">
-                        {vKey.replace("v", "Version ")}
-                      </span>
-                      <button className="text-gray-400 hover:text-gray-600">
-                        <Edit2 className="h-4 w-4" />
+                  {isEditing ? (
+                    <div className="flex items-start gap-2">
+                      <textarea
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        rows={3}
+                        className="min-w-0 flex-1 resize-y rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-300"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Save"
+                        onClick={() => saveEdit(vKey)}
+                        className="rounded-md p-1.5 hover:bg-gray-100"
+                      >
+                        <Save size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Cancel"
+                        onClick={() => setEditingKey(null)}
+                        className="rounded-md p-1.5 hover:bg-gray-100"
+                      >
+                        <X size={16} />
                       </button>
                     </div>
+                  ) : (
+                    <label className="flex cursor-pointer items-start gap-2">
+                      <input
+                        type="radio"
+                        name="version-title"
+                        checked={selectedTitleKey === vKey}
+                        onChange={() => {
+                          setSelectedTitleKey(vKey);
+                          setFinalTitle(value);
+                        }}
+                        className="mt-1 h-4 w-4 shrink-0 accent-[#1b4d3e]"
+                      />
+                      <span className="whitespace-pre-line text-[15px]">
+                        {value}
+                      </span>
+                    </label>
+                  )}
 
-                    <div className="space-y-3">
+                  <div
+                    className="mt-2 text-right font-mono text-[11px]"
+                    style={{ color: "#6b7280" }}
+                  >
+                    {(value || "").length} characters
+                  </div>
+                </div>
+              );
+            })}
+
+          {field === "description" &&
+            Object.entries(descVersions).map(([vKey, value]) => {
+              const isEditing = editingKey === vKey;
+              return (
+                <div
+                  key={vKey}
+                  className="mb-3 rounded-lg border p-4"
+                  style={{
+                    backgroundColor: COLORS.card,
+                    borderColor: COLORS.border,
+                  }}
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <span
+                      className="text-sm font-bold"
+                      style={{ color: COLORS.applyBg }}
+                    >
+                      {vKey.replace("v", "Version ")}
+                    </span>
+                    {!isEditing && (
+                      <button
+                        type="button"
+                        aria-label={`Edit ${vKey}`}
+                        onClick={() => startEdit(vKey, value)}
+                        className="rounded-md p-1.5 transition hover:bg-gray-100"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                    )}
+                  </div>
+
+                  {isEditing ? (
+                    <div className="flex items-start gap-2">
+                      <textarea
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        rows={4}
+                        className="min-w-0 flex-1 resize-y rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-300"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Save"
+                        onClick={() => saveEdit(vKey)}
+                        className="rounded-md p-1.5 hover:bg-gray-100"
+                      >
+                        <Save size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Cancel"
+                        onClick={() => setEditingKey(null)}
+                        className="rounded-md p-1.5 hover:bg-gray-100"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex cursor-pointer items-start gap-2">
+                      <input
+                        type="radio"
+                        name="version-description"
+                        checked={selectedDescKey === vKey}
+                        onChange={() => {
+                          setSelectedDescKey(vKey);
+                          setFinalDescription(value);
+                        }}
+                        className="mt-1 h-4 w-4 shrink-0 accent-[#1b4d3e]"
+                      />
+                      <span className="whitespace-pre-line text-[15px]">
+                        {value}
+                      </span>
+                    </label>
+                  )}
+
+                  <div
+                    className="mt-2 text-right font-mono text-[11px]"
+                    style={{ color: "#6b7280" }}
+                  >
+                    {(value || "").length} characters
+                  </div>
+                </div>
+              );
+            })}
+
+          {field === "features" &&
+            Object.entries(featureVersions).map(([vKey, list]) => {
+              const vTag = vKey.toUpperCase();
+              const isEditing = editingKey === vKey;
+              const totalChars = list.reduce(
+                (acc, curr) => acc + curr.length,
+                0,
+              );
+
+              return (
+                <div
+                  key={vKey}
+                  className="mb-3 rounded-lg border p-4"
+                  style={{
+                    backgroundColor: COLORS.card,
+                    borderColor: COLORS.border,
+                  }}
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <span
+                      className="text-sm font-bold"
+                      style={{ color: COLORS.applyBg }}
+                    >
+                      {vKey.replace("v", "Version ")}
+                    </span>
+                    {!isEditing && (
+                      <button
+                        type="button"
+                        aria-label={`Edit ${vKey}`}
+                        onClick={() => startEdit(vKey, list)}
+                        className="rounded-md p-1.5 transition hover:bg-gray-100"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                    )}
+                  </div>
+
+                  {isEditing ? (
+                    <div className="flex items-start gap-2">
+                      <textarea
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        rows={4}
+                        className="min-w-0 flex-1 resize-y rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-300"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Save"
+                        onClick={() => saveEdit(vKey)}
+                        className="rounded-md p-1.5 hover:bg-gray-100"
+                      >
+                        <Save size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Cancel"
+                        onClick={() => setEditingKey(null)}
+                        className="rounded-md p-1.5 hover:bg-gray-100"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
                       {list.map((item, idx) => {
                         const isChecked = selectedBullets.some(
                           (b) => b.text === item && b.versionTag === vTag,
                         );
-
                         return (
                           <label
                             key={idx}
-                            className="flex items-start space-x-3 cursor-pointer group"
+                            className="mb-1.5 flex cursor-pointer items-center gap-1.5"
                           >
                             <input
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => handleToggleBullet(item, vKey)}
-                              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                              className="h-4 w-4 shrink-0 accent-[#1b4d3e]"
                             />
-                            <span className="text-sm text-gray-800 group-hover:text-black">
-                              {item}
-                            </span>
+                            <span className="text-[15px]">{item}</span>
                           </label>
                         );
                       })}
                     </div>
+                  )}
 
-                    <div className="mt-3 border-t pt-2 text-right text-[11px] text-gray-400">
-                      {list.length} bullets • {totalChars} characters
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Right Column: Final Selected Bullets Preview */}
-          <div className="flex flex-col justify-between rounded-lg border border-emerald-200 bg-emerald-50/10 p-5">
-            <div>
-              <div className="flex items-center justify-between border-b border-emerald-100 pb-2 mb-3">
-                <span className="text-[10px] font-bold text-emerald-900 uppercase tracking-wider">
-                  FINAL FEATURES
-                </span>
-                <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                  ✓ PREVIEW
-                </span>
-              </div>
-
-              {/* Info banner */}
-              <div className="flex items-center space-x-2 rounded-md bg-amber-50 p-2.5 text-xs text-amber-800 mb-4 border border-amber-200">
-                <Lightbulb className="h-4 w-4 shrink-0 text-amber-600" />
-                <span>
-                  Checkboxes in each version let you mix bullets from different
-                  versions.
-                </span>
-              </div>
-
-              {/* Bullets Preview List */}
-              <div className="space-y-3">
-                {selectedBullets.map((bulletObj, idx) => (
                   <div
-                    key={idx}
-                    className="flex items-start justify-between text-sm text-gray-800"
+                    className="mt-2 text-right font-mono text-[11px]"
+                    style={{ color: "#6b7280" }}
                   >
-                    <p className="pr-2">• {bulletObj.text}</p>
-                    <span className="text-xs font-semibold text-gray-400 shrink-0">
-                      {bulletObj.versionTag}
-                    </span>
+                    {list.length} bullets • {totalChars} characters
                   </div>
-                ))}
-                {selectedBullets.length === 0 && (
-                  <p className="text-sm text-gray-400 italic">
-                    No bullets selected. Check items on the left to add them
-                    here.
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-4 text-[11px] text-gray-400">
-                {selectedBullets.length} bullets • {totalFeatureChars}{" "}
-                characters
-              </div>
-            </div>
-
-            <button
-              onClick={() => handleApplyField("features")}
-              disabled={saveMutation.isPending || selectedBullets.length === 0}
-              className="mt-6 flex w-full items-center justify-center rounded-md bg-[#1e4d3b] py-2.5 text-sm font-medium text-white shadow hover:bg-emerald-900 disabled:opacity-50"
-            >
-              {saveMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Check className="mr-2 h-4 w-4" />
-              )}
-              Apply ✓
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* --- Section 3: Product Description --- */}
-      <div className="rounded-xl border bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-gray-900">
-            Product Description
-          </h3>
-          <span className="text-xs text-gray-400">
-            Rewrites: {descriptionCount}/{MAX_REWRITE_LIMIT}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Left Column */}
-          <div className="space-y-4">
-            <div className="rounded-lg border bg-gray-50 p-4 relative">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                CURRENT DESCRIPTION
-              </span>
-              <span className="absolute top-3 right-3 rounded bg-gray-200 px-2 py-0.5 text-[10px] font-medium text-gray-600">
-                Existing
-              </span>
-              <p className="mt-2 text-sm text-gray-800 whitespace-pre-wrap">
-                {currentDescription || "No description available."}
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <span className="text-xs font-bold text-gray-900 uppercase">
-                AI Generated Versions
-              </span>
-              {Object.entries(descVersions).map(([vKey, value]) => (
-                <div
-                  key={vKey}
-                  onClick={() => {
-                    setSelectedDescKey(vKey);
-                    setFinalDescription(value);
-                  }}
-                  className={`cursor-pointer rounded-lg border p-4 transition-all ${
-                    selectedDescKey === vKey
-                      ? "border-emerald-600 bg-emerald-50/20 ring-1 ring-emerald-600"
-                      : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}
-                >
-                  <div className="flex items-center space-x-3 mb-2">
-                    <input
-                      type="radio"
-                      checked={selectedDescKey === vKey}
-                      onChange={() => {}}
-                      className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <span className="font-semibold text-sm capitalize text-gray-800">
-                      {vKey.replace("v", "Version ")}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-800 pl-7">{value}</p>
                 </div>
+              );
+            })}
+
+          {versionCount[field] === 0 && (
+            <p className="mb-3 text-sm italic" style={{ color: COLORS.muted }}>
+              No AI versions yet — generate one below.
+            </p>
+          )}
+
+          {/* Generate */}
+          <div
+            className="rounded-lg border-[1.5px] border-dashed p-4"
+            style={{ borderColor: COLORS.border, backgroundColor: "#fafbf6" }}
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-[15px] font-bold">
+                🪄&nbsp;{" "}
+                {isLimitReached
+                  ? "Rewrite limit reached"
+                  : `Generate version ${versionCount[field] + 1}`}
+              </h3>
+
+              <span className="font-mono text-xs" style={{ color: "#6b7280" }}>
+                {generationsLeft} generation{generationsLeft === 1 ? "" : "s"}{" "}
+                left
+              </span>
+            </div>
+
+            <input
+              type="text"
+              placeholder="Enter a custom prompt (e.g. emphasize energy efficiency)…"
+              value={customPrompt[field]}
+              onChange={(e) =>
+                setCustomPrompt((prev) => ({
+                  ...prev,
+                  [field]: e.target.value,
+                }))
+              }
+              className="mb-3 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-200"
+            />
+
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <Lightbulb size={17} style={{ color: "#c9a227" }} />
+              <span
+                className="mr-0.5 text-[13px]"
+                style={{ color: COLORS.muted }}
+              >
+                Quick tags:
+              </span>
+
+              {QUICK_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setQuickTag(tag)}
+                  className="rounded-[5px] border bg-white px-3 py-1 text-xs text-gray-600 shadow-none transition hover:bg-gray-50 hover:border-gray-400"
+                >
+                  {tag}
+                </button>
               ))}
             </div>
-          </div>
-
-          {/* Right Column */}
-          <div className="flex flex-col justify-between rounded-lg border border-emerald-200 bg-emerald-50/10 p-5">
-            <div>
-              <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
-                <span className="text-[10px] font-bold text-emerald-900 uppercase tracking-wider">
-                  FINAL DESCRIPTION
-                </span>
-                <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                  ✓ PREVIEW
-                </span>
-              </div>
-              <textarea
-                rows={6}
-                value={finalDescription}
-                onChange={(e) => setFinalDescription(e.target.value)}
-                className="mt-3 w-full rounded-md border border-gray-300 p-2 text-sm text-gray-900 focus:border-emerald-500 focus:ring-emerald-500"
-              />
-            </div>
 
             <button
-              onClick={() => handleApplyField("description")}
-              disabled={saveMutation.isPending || !finalDescription}
-              className="mt-4 flex w-full items-center justify-center rounded-md bg-[#1e4d3b] py-2.5 text-sm font-medium text-white shadow hover:bg-emerald-900 disabled:opacity-50"
+              type="button"
+              onClick={handleGenerate}
+              disabled={
+                generateMutation.isPending || isLimitReached || isPromptEmpty
+              }
+              className="flex w-full items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold text-white transition disabled:cursor-not-allowed"
+              style={{
+                backgroundColor:
+                  generateMutation.isPending || isLimitReached || isPromptEmpty
+                    ? "#e0decf"
+                    : COLORS.generateBg,
+                color:
+                  generateMutation.isPending || isLimitReached || isPromptEmpty
+                    ? "#a3a396"
+                    : "white",
+              }}
+              onMouseEnter={(e) => {
+                if (
+                  !generateMutation.isPending &&
+                  !isLimitReached &&
+                  !isPromptEmpty
+                ) {
+                  e.currentTarget.style.backgroundColor =
+                    COLORS.generateBgHover;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (
+                  !generateMutation.isPending &&
+                  !isLimitReached &&
+                  !isPromptEmpty
+                ) {
+                  e.currentTarget.style.backgroundColor = COLORS.generateBg;
+                }
+              }}
             >
-              {saveMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {generateMutation.isPending ? (
+                <Loader2 size={16} className="animate-spin" />
               ) : (
-                <Check className="mr-2 h-4 w-4" />
+                <Wand2 size={16} />
               )}
-              Apply ✓
+              {generateMutation.isPending
+                ? "Generating…"
+                : isLimitReached
+                  ? `Rewrite limit reached (${MAX_REWRITE_LIMIT}/${MAX_REWRITE_LIMIT})`
+                  : `Generate version ${versionCount[field] + 1}`}
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Generation Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
-            <div className="flex items-center justify-between border-b pb-3 mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Generate Content with AI
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-full p-1 text-gray-400 hover:bg-gray-100"
+        {/* RIGHT COLUMN */}
+        <div className="w-full flex-1 md:sticky md:top-4">
+          <div
+            className="rounded-lg border p-4"
+            style={{
+              backgroundColor: COLORS.card,
+              borderColor: COLORS.finalBorder,
+            }}
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <div
+                className="font-mono text-[11px] font-semibold tracking-[0.08em]"
+                style={{ color: "#6b7280" }}
               >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="mb-5 space-y-2">
-              <label className="block text-xs font-semibold uppercase text-gray-500">
-                1. Select Fields to Generate
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {["title", "features", "description"].map((field) => (
-                  <label
-                    key={field}
-                    className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border p-3 text-center transition-all ${
-                      selections[field as keyof typeof selections]
-                        ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                        : "hover:bg-gray-50"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selections[field as keyof typeof selections]}
-                      onChange={() =>
-                        setSelections((p) => ({
-                          ...p,
-                          [field]: !p[field as keyof typeof selections],
-                        }))
-                      }
-                      className="sr-only"
-                    />
-                    <span className="text-sm font-medium capitalize">
-                      {field}
-                    </span>
-                  </label>
-                ))}
+                FINAL {FIELD_META[field].label.toUpperCase()}
               </div>
-            </div>
 
-            <div className="mb-5">
-              <label className="mb-2 block text-xs font-semibold uppercase text-gray-500">
-                2. Quick Instructions
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {QUICK_TAGS.map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() =>
-                      setSelectedTag((prev) => (prev === tag ? "" : tag))
-                    }
-                    className={`flex items-center rounded-full border px-3 py-1 text-xs ${
-                      selectedTag === tag
-                        ? "border-indigo-600 bg-indigo-600 text-white"
-                        : "border-gray-200 bg-gray-50 text-gray-700"
-                    }`}
-                  >
-                    <Tag className="mr-1 h-3 w-3" />
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <label className="mb-1 block text-xs font-semibold uppercase text-gray-500">
-                3. Custom Prompt
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Highlight durability and features..."
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-indigo-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="flex justify-end space-x-3 border-t pt-4">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-md px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              <span
+                className="flex h-[22px] items-center gap-1 rounded-[5px] px-2 font-mono text-[11px] font-bold tracking-[0.05em]"
+                style={{ backgroundColor: "#e2f0e7", color: "#1b4d3e" }}
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleGenerate}
-                disabled={
-                  generateMutation.isPending ||
-                  (!selections.title &&
-                    !selections.features &&
-                    !selections.description)
-                }
-                className="flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-              >
-                {generateMutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Check size={13} />
+                PREVIEW
+              </span>
+            </div>
+
+            {field === "features" ? (
+              <div>
+                <div
+                  className="mb-3 flex gap-2 text-[13px]"
+                  style={{ color: "#8a6d1f" }}
+                >
+                  <Lightbulb size={17} className="shrink-0" />
+                  <span>
+                    Checkboxes in each version let you mix bullets from
+                    different versions.
+                  </span>
+                </div>
+
+                {selectedBullets.length > 0 ? (
+                  selectedBullets.map((bullet, index) => (
+                    <div
+                      key={index}
+                      className="mb-1.5 flex items-start justify-between"
+                    >
+                      <span className="text-[15px]">• {bullet.text}</span>
+                      <span
+                        className="ml-1 whitespace-nowrap text-[11px]"
+                        style={{ color: COLORS.muted }}
+                      >
+                        {bullet.versionTag}
+                      </span>
+                    </div>
+                  ))
                 ) : (
-                  <Sparkles className="mr-2 h-4 w-4" />
+                  <p className="text-sm italic" style={{ color: COLORS.muted }}>
+                    Check bullets from a version to build your final feature
+                    list.
+                  </p>
                 )}
-                Generate
+
+                <div
+                  className="mt-4 text-[11px]"
+                  style={{ color: COLORS.muted }}
+                >
+                  {selectedBullets.length} bullets • {totalFeatureChars}{" "}
+                  characters
+                </div>
+              </div>
+            ) : field === "title" ? (
+              <>
+                <textarea
+                  rows={4}
+                  value={finalTitle}
+                  onChange={(e) => setFinalTitle(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 text-[15px] text-gray-900 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-200"
+                />
+                <div
+                  className="mt-1.5 text-right font-mono text-[11px]"
+                  style={{ color: COLORS.muted }}
+                >
+                  {finalTitle.length} characters
+                </div>
+              </>
+            ) : (
+              <>
+                <textarea
+                  rows={6}
+                  value={finalDescription}
+                  onChange={(e) => setFinalDescription(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-gray-300 bg-white p-2 text-[15px] text-gray-900 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-200"
+                />
+                <div
+                  className="mt-1.5 text-right font-mono text-[11px]"
+                  style={{ color: COLORS.muted }}
+                >
+                  {finalDescription.length} characters
+                </div>
+              </>
+            )}
+
+            <div className="mt-4 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => handleApplyField(field)}
+                disabled={
+                  saveMutation.isPending ||
+                  (field === "title" && !finalTitle) ||
+                  (field === "description" && !finalDescription) ||
+                  (field === "features" && selectedBullets.length === 0)
+                }
+                className="flex items-center gap-2 rounded-md px-5 py-2 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-70"
+                style={{ backgroundColor: COLORS.applyBg }}
+                onMouseEnter={(e) => {
+                  if (!saveMutation.isPending) {
+                    e.currentTarget.style.backgroundColor = COLORS.applyBgHover;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = COLORS.applyBg;
+                }}
+              >
+                {saveMutation.isPending ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Check size={16} />
+                )}
+                Apply
               </button>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

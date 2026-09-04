@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import {
@@ -14,6 +14,7 @@ import {
   FiTarget,
   FiSettings,
   FiLayers,
+  FiLogOut, // <--- 1. Import Logout Icon
 } from "react-icons/fi";
 
 import { projectService } from "../../api/project";
@@ -62,21 +63,32 @@ const navItems: NavItem[] = [
   { to: "/admin/citation", label: "Citation", icon: FiBarChart2 },
   { to: "/admin/competitor", label: "Competitor Intelligence", icon: FiTarget },
   { to: "/admin/settings", label: "Settings", icon: FiSettings },
-  // {
-  //   label: "Settings",
-  //   icon: FiSettings,
-  //   children: [
-  //     { to: "/admin/settings/general", label: "General" },
-  //     { to: "/admin/settings/team", label: "Team Members" },
-  //     { to: "/admin/settings/billing", label: "Billing" },
-  //   ],
-  // },
 ];
+
+const ACCESS_TOKEN_KEY = "access_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
+
+export const tokenStorage = {
+  getAccess: () => localStorage.getItem(ACCESS_TOKEN_KEY),
+  getRefresh: () => localStorage.getItem(REFRESH_TOKEN_KEY),
+
+  setTokens: (access: string, refresh: string) => {
+    localStorage.setItem(ACCESS_TOKEN_KEY, access);
+    localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+  },
+
+  clear: () => {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+  },
+};
 
 export default function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const location = useLocation();
+  const navigate = useNavigate(); // <--- 2. Router hook for navigation
+  const queryClient = useQueryClient(); // <--- 3. Query client for cache invalidation
   const dispatch = useDispatch();
 
   // Get persisted global project ID from Redux
@@ -120,6 +132,15 @@ export default function Layout() {
     setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
     // Automatically expand the sidebar if a user clicks a nested menu icon while collapsed
     if (collapsed) setCollapsed(false);
+  };
+
+  // ==========================================
+  // Logout Handler
+  // ==========================================
+  const handleLogout = () => {
+    tokenStorage.clear(); // Clear JWT / Refresh tokens
+    queryClient.clear(); // Clear TanStack Query cache
+    navigate("/login"); // Redirect to login
   };
 
   // Find the exact metadata object matching our global context
@@ -238,6 +259,22 @@ export default function Layout() {
             );
           })}
         </nav>
+
+        {/* LOGOUT BUTTON (FOOTER OF SIDEBAR) */}
+        <div className="p-3 border-t border-gray-200 flex-shrink-0">
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center ${
+              collapsed ? "justify-center" : "justify-start"
+            } gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all font-medium`}
+            title={collapsed ? "Logout" : undefined}
+          >
+            <FiLogOut className="text-xl min-w-[20px]" />
+            {!collapsed && (
+              <span className="text-sm whitespace-nowrap">Logout</span>
+            )}
+          </button>
+        </div>
       </aside>
 
       {/* TOGGLE RAIL */}
