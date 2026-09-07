@@ -284,7 +284,7 @@ export default function ProductDashboard() {
             <TipsTabContent data={tabData} isLoading={isLoading} />
           )}
           {activeTab === "generate_content" && (
-            <ProdoctGenerateContent productInfo={productInfo} />
+            <ProdoctGenerateContent productInfo={displayProductInfo} />
           )}
         </main>
       </div>
