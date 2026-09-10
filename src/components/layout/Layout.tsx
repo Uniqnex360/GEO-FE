@@ -155,10 +155,15 @@ export default function Layout() {
         }`}
       >
         {/* Logo */}
+        {/* Logo */}
         <div className="h-16 flex items-center justify-center border-b border-gray-200 flex-shrink-0">
-          <h1 className="font-bold text-lg text-slate-900">
-            {collapsed ? "G" : "GEO"}
-          </h1>
+          <img
+            src="/images/logo.png"
+            alt="GEO logo"
+            className={`object-contain transition-all duration-200 ${
+              collapsed ? "w-10 h-10" : "w-full h-25"
+            }`}
+          />
         </div>
 
         {/* Navigation with vertical scrolling */}
@@ -298,7 +303,7 @@ export default function Layout() {
               </h1>
               <p className="text-sm text-slate-500 mt-1">
                 Currently tracking diagnostics for{" "}
-                {activeProject?.website || "your core domain"}
+                {activeProject?.website || ""}
               </p>
             </div>
 

@@ -25,9 +25,12 @@ import {
   Minus,
 } from "lucide-react";
 import { useSelector } from "react-redux";
+import { useSearchParams } from "react-router-dom";
+import { createPortal } from "react-dom";
 
 import { selectGlobalProjectId } from "../../store/projectSlice";
 import { dashboardService } from "../../api/dashboard";
+import DateRangeFilter from "../../components/Common/DateRangeFilter";
 
 interface KPICardItem {
   label: string;
@@ -41,10 +44,24 @@ interface KPICardItem {
 export default function Dashboard() {
   const reduxProjectId = useSelector(selectGlobalProjectId);
 
+  const [searchParams] = useSearchParams();
+
+  const startDate = searchParams.get("start_date") || "";
+  const endDate = searchParams.get("end_date") || "";
+
+  const headerActionsContainer = document.getElementById(
+    "layout-actions-portal",
+  );
+
   const { data, isLoading, error } = useQuery({
     // Adding reduxProjectId forces a re-fetch automatically whenever the project is swapped
-    queryKey: ["brands", reduxProjectId],
-    queryFn: () => dashboardService.getDashboard(Number(reduxProjectId)),
+    queryKey: ["brands", reduxProjectId, startDate, endDate],
+    queryFn: () =>
+      dashboardService.getDashboard(
+        Number(reduxProjectId),
+        startDate || undefined,
+        endDate || undefined,
+      ),
     enabled: !!reduxProjectId, // Safely stalls execution if no project context is active
   });
 
@@ -101,8 +118,9 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 bg-slate-50 min-h-screen font-sans text-slate-800">
+      {headerActionsContainer &&
+        createPortal(<DateRangeFilter />, headerActionsContainer)}
       {/* --- Top Sub-Header Metadata --- */}
-
 
       {/* --- KPI Grid Summary Row --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
@@ -296,21 +314,22 @@ export default function Dashboard() {
               {data.visualizations.citationSourcesPie.map(
                 //@ts-ignore
                 (entry, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{
-                        backgroundColor: pieColors[idx % pieColors.length],
-                      }}
-                    ></span>
-                    <span className="truncate">{entry.source}</span>
+                  <div key={idx} className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{
+                          backgroundColor: pieColors[idx % pieColors.length],
+                        }}
+                      ></span>
+                      <span className="truncate">{entry.source}</span>
+                    </div>
+                    <span className="font-bold text-slate-900 ml-1">
+                      {entry.percentage}%
+                    </span>
                   </div>
-                  <span className="font-bold text-slate-900 ml-1">
-                    {entry.percentage}%
-                  </span>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           </div>
         </div>

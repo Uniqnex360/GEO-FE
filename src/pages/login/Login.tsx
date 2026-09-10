@@ -61,6 +61,7 @@ export default function Login() {
         onSubmit={handleSubmit(onSubmit)}
         className="relative max-w-100 w-full mx-auto rounded-lg bg-white p-8 shadow-lg"
       >
+        <img src="/images/logo.png" alt="logo" />
         <h2 className="text-4xl text-slate-900 font-bold text-center mb-6">
           SIGN IN
         </h2>
