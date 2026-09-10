@@ -395,83 +395,251 @@ function VisibilityTabContent({ data, isLoading }: VisibilityProps) {
 /* ==========================================
    TAB PANEL: COMPETITOR ASSESSMENT MATRIX
    ========================================== */
+
 interface CompetitorProps {
   data: any;
   isLoading: boolean;
 }
+
 function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
   if (isLoading) return <TabSpinnerFallback />;
   if (!data) return null;
 
-  const getBadgeStyle = (score: number) => {
-    if (score >= 75) return "bg-orange-500 text-white";
-    if (score >= 60) return "bg-amber-500 text-white";
-    return "bg-amber-200 text-amber-800";
+  //@ts-ignore
+  const getScoreColor = (score: number, engine: string) => {
+    if (engine === "chatGPT") return "text-emerald-600";
+    if (engine === "gemini") return "text-blue-600";
+    if (engine === "claude") return "text-amber-600";
+    return "text-slate-900";
+  };
+
+  const getBarColor = (engine: string) => {
+    if (engine === "chatGPT") return "bg-emerald-500";
+    if (engine === "gemini") return "bg-blue-500";
+    if (engine === "claude") return "bg-amber-500";
+    return "bg-slate-500";
+  };
+
+  const getProductUrl = (row: any) => {
+    return row?.product_url || row?.url || row?.website || "";
+  };
+
+  const getMentionedBy = (row: any) => {
+    return row?.mentionedBy || row?.mentioned_by || [];
+  };
+
+  const getEngineBadgeStyle = (engine: string) => {
+    const value = engine.toLowerCase();
+
+    if (value.includes("gpt") || value.includes("chatgpt")) {
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    }
+
+    if (value.includes("gemini")) {
+      return "bg-blue-50 text-blue-700 border-blue-200";
+    }
+
+    return "bg-amber-50 text-amber-700 border-amber-200";
   };
 
   return (
     <div className="space-y-6">
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm overflow-x-auto">
-        <h3 className="text-base font-bold text-slate-900 mb-4">
-          Competitor Visibility Comparison
-        </h3>
-        <table className="w-full text-left border-collapse min-w-[600px]">
-          <thead>
-            <tr className="text-xs font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
-              <th className="py-3 px-4">Competitor</th>
-              <th className="py-3 px-4">ChatGPT</th>
-              <th className="py-3 px-4">Gemini</th>
-              <th className="py-3 px-4">Claude</th>
-              <th className="py-3 px-4 text-right">Avg Score</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 text-sm">
-            {data.competitors?.map((row: any, idx: number) => (
-              <tr
-                key={idx}
-                className={
-                  row.active
-                    ? "bg-blue-50/40 font-semibold"
-                    : "hover:bg-slate-50/60"
-                }
-              >
-                <td className="py-3.5 px-4 text-slate-900">{row.name}</td>
-                <td className="py-3.5 px-4">
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-bold ${getBadgeStyle(row.chatGPT)}`}
-                  >
-                    {row.chatGPT}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4">
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-bold ${getBadgeStyle(row.gemini)}`}
-                  >
-                    {row.gemini}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4">
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-bold ${getBadgeStyle(row.claude)}`}
-                  >
-                    {row.claude}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-right text-blue-600 font-bold">
-                  {row.avg}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* ==========================================
+          DESCRIPTION
+      ========================================== */}
+
+      <div className="text-[16px] text-slate-500">
+        Products that compete with{" "}
+        <span className="font-semibold text-slate-900">
+          {data.productName || data.product_name || "your product"}
+        </span>{" "}
+        in LLM-generated recommendations.
       </div>
 
+      {/* ==========================================
+          COMPETITOR CARDS
+      ========================================== */}
+
+      <div className="space-y-4">
+        {data.competitors?.map((row: any, idx: number) => {
+          const chatGPT = Number(row?.chatGPT ?? 0);
+
+          const gemini = Number(row?.gemini ?? 0);
+
+          const claude = Number(row?.claude ?? 0);
+
+          const avg = Number(row?.avg ?? 0);
+
+          const productUrl = getProductUrl(row);
+
+          const mentionedBy = getMentionedBy(row);
+
+          return (
+            <div
+              key={idx}
+              className="bg-white border border-slate-200 rounded-2xl px-6 py-6 shadow-sm hover:shadow-md transition-shadow"
+            >
+              {/* ==================================
+                    HEADER
+                ================================== */}
+
+              <div className="flex items-start justify-between gap-6">
+                <div className="min-w-0">
+                  <h3 className="text-xl font-semibold text-slate-900 truncate">
+                    {row.name}
+                  </h3>
+
+                  {productUrl ? (
+                    <a
+                      href={productUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-flex items-center gap-1.5 text-[15px] text-slate-400 hover:text-cyan-600 transition-colors"
+                    >
+                      <span className="text-sm">↗</span>
+                      Visit product
+                    </a>
+                  ) : (
+                    <div className="mt-1 flex items-center gap-1.5 text-[15px] text-slate-400">
+                      <span className="text-sm">↗</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* OVERALL */}
+
+                <div className="flex-shrink-0 text-right">
+                  <div className="text-[28px] leading-none font-bold text-slate-900">
+                    {avg}
+                  </div>
+
+                  <div className="text-sm text-slate-400 mt-2">overall</div>
+                </div>
+              </div>
+
+              {/* ==================================
+                    ENGINE SCORES
+                ================================== */}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
+                {/* GPT */}
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-slate-400">
+                      GPT
+                    </span>
+
+                    <span
+                      className={`text-sm font-bold ${getScoreColor(chatGPT, "chatGPT")}`}
+                    >
+                      {chatGPT}
+                    </span>
+                  </div>
+
+                  <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${getBarColor("chatGPT")}`}
+                      style={{
+                        width: `${Math.min(Math.max(chatGPT, 0), 10) * 10}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* GEMINI */}
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-slate-400">
+                      Gemini
+                    </span>
+
+                    <span
+                      className={`text-sm font-bold ${getScoreColor(gemini, "gemini")}`}
+                    >
+                      {gemini}
+                    </span>
+                  </div>
+
+                  <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${getBarColor("gemini")}`}
+                      style={{
+                        width: `${Math.min(Math.max(gemini, 0), 10) * 10}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* CLAUDE */}
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-slate-400">
+                      Claude
+                    </span>
+
+                    <span
+                      className={`text-sm font-bold ${getScoreColor(claude, "claude")}`}
+                    >
+                      {claude}
+                    </span>
+                  </div>
+
+                  <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${getBarColor("claude")}`}
+                      style={{
+                        width: `${Math.min(Math.max(claude, 0), 10) * 10}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* ==================================
+                    MENTIONED BY
+                ================================== */}
+
+              {mentionedBy.length > 0 && (
+                <div className="flex items-center gap-3 mt-5 flex-wrap">
+                  <span className="text-[15px] text-slate-400">
+                    Mentioned by:
+                  </span>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {mentionedBy.map((engine: string, engineIndex: number) => (
+                      <span
+                        key={engineIndex}
+                        className={`px-3 py-1 rounded-full text-sm font-semibold border ${getEngineBadgeStyle(engine)}`}
+                      >
+                        {engine}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ==========================================
+          COMPETITIVE POSTURE + CONTENT GAPS
+      ========================================== */}
+
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* ========================================
+            COMPETITIVE POSTURE
+        ======================================== */}
+
         <div className="lg:col-span-2 bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
             <h3 className="text-sm font-bold text-slate-900">
               Competitive Posture
             </h3>
+
             <span className="text-xs text-slate-500">
               You vs top competitor
             </span>
@@ -486,17 +654,23 @@ function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
                 data={data.radarData}
               >
                 <PolarGrid stroke="#cbd5e1" />
+
                 <PolarAngleAxis
                   dataKey="subject"
                   stroke="#64748b"
-                  tick={{ fontSize: 10, fill: "#475569" }}
+                  tick={{
+                    fontSize: 10,
+                    fill: "#475569",
+                  }}
                 />
+
                 <PolarRadiusAxis
                   angle={30}
-                  domain={[0, 100]}
+                  domain={[0, 10]}
                   stroke="#cbd5e1"
                   tick={false}
                 />
+
                 <Radar
                   name="You"
                   dataKey="You"
@@ -504,6 +678,7 @@ function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
                   fill="#10b981"
                   fillOpacity={0.25}
                 />
+
                 <Radar
                   name="Top Competitor"
                   dataKey="Competitor"
@@ -511,6 +686,7 @@ function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
                   fill="#3b82f6"
                   fillOpacity={0.15}
                 />
+
                 <Legend
                   wrapperStyle={{
                     fontSize: "11px",
@@ -522,15 +698,20 @@ function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex justify-between text-xs">
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex justify-between text-xs gap-3">
             <span className="font-medium text-slate-700">
               Reviews Metric Analysis:
             </span>
-            <span className="text-amber-600 font-semibold">
+
+            <span className="text-amber-600 font-semibold text-right">
               {data.radarSummaryText}
             </span>
           </div>
         </div>
+
+        {/* ========================================
+            CONTENT & SCHEMA GAPS
+        ======================================== */}
 
         <div className="lg:col-span-3 bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
@@ -539,11 +720,12 @@ function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
                 <h3 className="text-sm font-bold text-slate-900">
                   Content & Schema Gaps
                 </h3>
+
                 <span className="text-xs text-slate-500">
                   Optimization elements breakdown
                 </span>
               </div>
-              {/* Changed red/rose badge to light orange/amber */}
+
               <span className="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-200">
                 ⚠️ {data.priorityCountText || "Gaps Found"}
               </span>
@@ -559,7 +741,7 @@ function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
                     <span className="font-semibold text-slate-800">
                       {item.title}
                     </span>
-                    {/* Changed High status text color from rose-600 to amber-600 */}
+
                     <span className="text-amber-600 font-semibold">
                       {item.gain}
                     </span>
@@ -569,12 +751,19 @@ function CompetitorTabContent({ data, isLoading }: CompetitorProps) {
                     <span className="text-[10px] text-slate-500 w-12">
                       You: {item.you}
                     </span>
+
                     <div className="flex-1 bg-slate-200 h-2 rounded-full overflow-hidden">
                       <div
                         className="bg-emerald-500 h-2 rounded-full"
-                        style={{ width: `${item.you}%` }}
+                        style={{
+                          width: `${
+                            Math.min(Math.max(Number(item.you ?? 0), 0), 10) *
+                            10
+                          }%`,
+                        }}
                       />
                     </div>
+
                     <span className="text-[10px] text-slate-500 w-12 text-right">
                       Top: {item.top}
                     </span>

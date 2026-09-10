@@ -694,14 +694,14 @@ export default function Product() {
             const image =
               (product as any)?.image || (product as any)?.image_url || "";
 
-            const gpt = analytics?.by_engine?.chatgpt?.visibility_rate ?? 100;
+            const gpt = analytics?.by_engine?.chatgpt?.visibility_rate ?? 0;
 
-            const gemini = analytics?.by_engine?.gemini?.visibility_rate ?? 100;
+            const gemini = analytics?.by_engine?.gemini?.visibility_rate ?? 0;
 
             const claude =
-              analytics?.by_engine?.anthropic?.visibility_rate ?? 100;
+              analytics?.by_engine?.anthropic?.visibility_rate ?? 0;
 
-            const overall = analytics?.visibility_rate ?? 100;
+            const overall = analytics?.visibility_rate ?? 0;
 
             const hasAnalysis = (analytics?.total_queries ?? 0) > 0;
 
