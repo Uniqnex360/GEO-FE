@@ -785,43 +785,107 @@ interface CitationProps {
   data: any;
   isLoading: boolean;
 }
+
 function CitationTabContent({ data, isLoading }: CitationProps) {
   if (isLoading) return <TabSpinnerFallback />;
   if (!data) return null;
 
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm overflow-x-auto">
-      <h3 className="text-base font-bold text-slate-900 mb-4">
-        Citation Comparison
-      </h3>
-      <table className="w-full text-left border-collapse min-w-[550px]">
-        <thead>
-          <tr className="text-xs font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
-            <th className="py-3 px-4">Source</th>
-            <th className="py-3 px-4">Authority</th>
-            <th className="py-3 px-4">Your Mentions</th>
-            <th className="py-3 px-4">Competitor Mentions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100 text-sm">
-          {data.citations?.map((item: any, idx: number) => (
-            <tr key={idx} className="hover:bg-slate-50/50">
-              <td className="py-3.5 px-4 font-semibold text-slate-800">
+  const citations = data.citations || [];
+
+  const chatGPTCitations = citations.filter((item: any) =>
+    item.model?.toUpperCase().includes("GPT"),
+  );
+
+  const geminiCitations = citations.filter((item: any) =>
+    item.model?.toUpperCase().includes("GEMINI"),
+  );
+
+  const claudeCitations = citations.filter((item: any) =>
+    item.model?.toUpperCase().includes("CLAUDE"),
+  );
+
+  const renderCitationSection = (
+    title: string,
+    items: any[],
+    icon: string,
+    badgeClass: string,
+  ) => (
+    <div className="mb-8">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-xl">{icon}</span>
+
+        <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+
+        <span
+          className={`min-w-[38px] h-7 px-2 rounded-full flex items-center justify-center text-sm font-semibold ${badgeClass}`}
+        >
+          {items.length}
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        {items.map((item: any, idx: number) => (
+          <div
+            key={idx}
+            className="bg-white border border-slate-200 rounded-xl px-6 py-5"
+          >
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <a
+                href={item.url || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[17px] font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1.5"
+              >
                 {item.source}
-              </td>
-              <td className="py-3.5 px-4 text-slate-500">{item.authority}</td>
-              <td className="py-3.5 px-4 text-blue-600 font-medium">
-                {item.you}
-              </td>
-              <td className="py-3.5 px-4 text-slate-600">{item.competitor}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                <span className="text-sm">↗</span>
+              </a>
+
+              <div className="text-sm text-slate-400 whitespace-nowrap">
+                Trust:{" "}
+                <span className="text-orange-600 font-semibold">
+                  {item.trust}/10
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[16px] leading-7 text-slate-600 italic">
+              "{item.quote}"
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <p className="text-[16px] text-slate-500 mb-8">
+        Sources that the LLMs cite when referencing this product.
+      </p>
+
+      {renderCitationSection(
+        "ChatGPT",
+        chatGPTCitations,
+        "🤖",
+        "bg-emerald-100 text-emerald-700 border border-emerald-200",
+      )}
+
+      {renderCitationSection(
+        "Gemini",
+        geminiCitations,
+        "✧",
+        "bg-blue-100 text-blue-700 border border-blue-200",
+      )}
+
+      {renderCitationSection(
+        "Claude",
+        claudeCitations,
+        "▢",
+        "bg-amber-100 text-amber-700 border border-amber-200",
+      )}
     </div>
   );
 }
-
 /* ==========================================
    TAB PANEL: PRIORITIZED RECOMMENDATIONS
    ========================================== */
