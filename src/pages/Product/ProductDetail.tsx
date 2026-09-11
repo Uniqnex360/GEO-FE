@@ -1,3 +1,4 @@
+import React from "react";
 import { useParams, useSearchParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
@@ -919,8 +920,8 @@ interface ActionItem {
   title: string;
   solution: string;
   model: string;
-  competitor_products?: CompetitorProduct[]; // Added new JSON array structure
-  competitors?: Competitor[]; // Retained legacy fallbacks
+  competitor_products?: CompetitorProduct[];
+  competitors?: Competitor[];
   impact: number;
   query_optimization_tag: string;
 }
@@ -934,248 +935,680 @@ interface RecommendationsProps {
 
 function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
   if (isLoading) return <TabSpinnerFallback />;
-  if (!data || !data.actions) return null; // Safeguard if actions is missing
+  if (!data || !data.actions) return null;
 
-  const getActionColor = (type: string) => {
-    switch (type) {
-      case "gap":
-        return "bg-orange-500";
-      case "content":
-        return "bg-blue-500";
-      case "citation":
-        return "bg-emerald-500";
+  const [expandedCriteria, setExpandedCriteria] = React.useState<string | null>(
+    data.actions.length > 0 ? data.actions[0].type : null,
+  );
+
+  const models = ["GPT", "GEMINI", "CLAUDE"];
+
+  const getModelName = (model: string) => {
+    const value = model?.replace("LLMModels.", "").toUpperCase();
+
+    if (value === "GPT" || value === "CHATGPT") return "GPT";
+    if (value === "GEMINI") return "GEMINI";
+    if (value === "CLAUDE") return "CLAUDE";
+
+    return value;
+  };
+
+  const getModelLabel = (model: string) => {
+    if (model === "GPT") return "ChatGPT";
+    if (model === "GEMINI") return "Gemini";
+    if (model === "CLAUDE") return "Claude";
+
+    return model;
+  };
+
+  const getModelColor = (model: string) => {
+    if (model === "GPT") {
+      return {
+        text: "text-emerald-500",
+        bg: "bg-emerald-50",
+        border: "border-emerald-200",
+        bar: "bg-emerald-500",
+        badge: "bg-emerald-100 text-emerald-600",
+      };
+    }
+
+    if (model === "GEMINI") {
+      return {
+        text: "text-blue-500",
+        bg: "bg-blue-50",
+        border: "border-blue-200",
+        bar: "bg-blue-500",
+        badge: "bg-blue-100 text-blue-600",
+      };
+    }
+
+    return {
+      text: "text-orange-500",
+      bg: "bg-orange-50",
+      border: "border-orange-200",
+      bar: "bg-orange-500",
+      badge: "bg-orange-100 text-orange-600",
+    };
+  };
+
+  const getCriteriaName = (type: string) => {
+    const value = type?.toLowerCase();
+
+    switch (value) {
+      case "title":
+        return "Title";
+      case "description":
+        return "Description";
+      case "features":
+      case "feature":
+        return "Features";
+      case "attributes":
+      case "attribute":
+        return "Attributes";
+      case "assets":
+      case "asset":
+        return "Assets";
+      case "pricing":
+      case "price":
+        return "Pricing";
       default:
-        return "bg-sky-500";
+        return type ? type.charAt(0).toUpperCase() + type.slice(1) : "Other";
     }
   };
 
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-      <h3 className="text-base font-bold text-slate-900 mb-4">
-        Improvement Recommendations
-      </h3>
-      <div className="space-y-4">
-        {data.actions.map((item: ActionItem, index: number) => {
-          // Check if competitor_products exists and has elements
-          const hasCompetitorProducts =
-            Array.isArray(item.competitor_products) &&
-            item.competitor_products.length > 0;
+  const getCriteriaDescription = (criteria: string) => {
+    switch (criteria.toLowerCase()) {
+      case "title":
+        return "Title tag & headings";
+      case "description":
+        return "Product description copy";
+      case "features":
+        return "Feature lists & bullets";
+      case "attributes":
+        return "Specs & identifiers";
+      case "assets":
+        return "Images, video & media";
+      case "pricing":
+        return "Price display & schema";
+      default:
+        return "Product content optimization";
+    }
+  };
 
-          // Legacy fallback check
-          const hasLegacyCompetitors =
-            Array.isArray(item.competitors) && item.competitors.length > 0;
+  const getCriteriaIcon = (criteria: string) => {
+    switch (criteria.toLowerCase()) {
+      case "title":
+        return "T";
+      case "description":
+        return "D";
+      case "features":
+        return "F";
+      case "attributes":
+        return "A";
+      case "assets":
+        return "As";
+      case "pricing":
+        return "$";
+      default:
+        return "•";
+    }
+  };
+
+  const getCriteriaActions = (criteria: string) => {
+    return data.actions!.filter(
+      (item) => getCriteriaName(item.type) === criteria,
+    );
+  };
+
+  const getModelActions = (criteria: string, model: string) => {
+    return getCriteriaActions(criteria).filter(
+      (item) => getModelName(item.model) === model,
+    );
+  };
+
+  const getAverageImpact = (items: ActionItem[]) => {
+    if (!items.length) return 0;
+
+    const total = items.reduce(
+      (sum, item) => sum + Number(item.impact || 0),
+      0,
+    );
+
+    return total / items.length;
+  };
+
+  const getScore = (items: ActionItem[]) => {
+    return Math.round(getAverageImpact(items) * 10);
+  };
+
+  const getOverallScore = (criteria: string) => {
+    const scores = models
+      .map((model) => getScore(getModelActions(criteria, model)))
+      .filter((score) => score > 0);
+
+    if (!scores.length) return 0;
+
+    return Math.round(
+      scores.reduce((sum, score) => sum + score, 0) / scores.length,
+    );
+  };
+
+  const criteriaList = Array.from(
+    new Set(data.actions.map((item) => getCriteriaName(item.type))),
+  );
+
+  const getScoreColor = (score: number) => {
+    if (score >= 70) return "text-emerald-500";
+    if (score >= 50) return "text-orange-500";
+    return "text-orange-500";
+  };
+
+  const getScoreBarColor = (score: number) => {
+    if (score >= 70) return "bg-emerald-500";
+    return "bg-orange-500";
+  };
+
+
+  const toggleCriteria = (criteria: string) => {
+    setExpandedCriteria((current) => (current === criteria ? null : criteria));
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Description */}
+      <p className="text-sm text-slate-500 px-1">
+        Recommendation statistics by content criteria. Click any row to see the
+        detailed recommendations for each LLM engine.
+      </p>
+
+      {/* Summary Table */}
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        {/* Table Header */}
+        <div className="grid grid-cols-[minmax(280px,1.8fr)_1fr_1fr_1fr_120px] bg-slate-50/70 border-b border-slate-200 px-6 py-4">
+          <div className="text-xs font-bold text-slate-400 uppercase">
+            Criteria
+          </div>
+
+          {models.map((model) => {
+            const colors = getModelColor(model);
+
+            return (
+              <div
+                key={model}
+                className={`flex items-center gap-2 text-xs font-bold uppercase ${colors.text}`}
+              >
+                {model === "GPT" && (
+                  <svg
+                    className="w-4 h-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="6" y="7" width="12" height="10" rx="2" />
+                    <path d="M9 11h.01M15 11h.01M9 15h6" />
+                    <path d="M12 3v4M4 11h2M18 11h2" />
+                  </svg>
+                )}
+
+                {model === "GEMINI" && (
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M12 2l1.8 7.2L21 11l-7.2 1.8L12 20l-1.8-7.2L3 11l7.2-1.8L12 2z" />
+                  </svg>
+                )}
+
+                {model === "CLAUDE" && (
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M4 5h16v11H8l-4 4V5z" />
+                  </svg>
+                )}
+
+                {getModelLabel(model)}
+              </div>
+            );
+          })}
+
+          <div className="text-xs font-bold text-slate-400 uppercase text-right">
+            Score
+          </div>
+        </div>
+
+        {/* Criteria Rows */}
+        {criteriaList.map((criteria) => {
+          const criteriaActions = getCriteriaActions(criteria);
+          const overallScore = getOverallScore(criteria);
+          const isExpanded = expandedCriteria === criteria;
 
           return (
-            <div
-              key={index}
-              className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all space-y-4"
-            >
-              {/* Top Header Bar: Badges & Impact Meter */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                {/* Metadata Badges */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={`text-[10px] font-bold text-white uppercase px-2.5 py-0.5 rounded-md tracking-wide ${getActionColor(
-                      item.type,
-                    )}`}
-                  >
-                    {item.type}
-                  </span>
-
-                  <span className="bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded-md capitalize">
-                    {item.effort} Effort
-                  </span>
-
-                  {item.model && (
-                    <span className="bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase">
-                      {item.model.replace("LLMModels.", "")}
+            <React.Fragment key={criteria}>
+              <div
+                onClick={() => toggleCriteria(criteria)}
+                className={`grid grid-cols-[minmax(280px,1.8fr)_1fr_1fr_1fr_120px] items-center px-6 py-5 cursor-pointer transition-colors ${
+                  isExpanded ? "bg-slate-50/40" : "hover:bg-slate-50/60"
+                } ${!isExpanded ? "border-b border-slate-100" : ""}`}
+              >
+                {/* Criteria */}
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+                    <span className="text-orange-500 font-bold text-sm">
+                      {getCriteriaIcon(criteria)}
                     </span>
-                  )}
-
-                  {item.query_optimization_tag && (
-                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                      {item.query_optimization_tag}
-                    </span>
-                  )}
-                </div>
-
-                {/* Impact Meter */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    Impact
-                  </span>
-                  <div className="w-20 bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min(item.impact * 10, 100)}%` }}
-                    />
                   </div>
-                  <span className="text-xs font-bold text-slate-800 min-w-[16px] text-right">
-                    {item.impact}
-                  </span>
-                </div>
-              </div>
 
-              {/* Card Body */}
-              <div className="space-y-3">
-                {/* Strategy / Title */}
-                {item.title && (
-                  <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                      Optimization Strategy
-                    </span>
-                    <p className="text-sm font-medium text-slate-900 leading-relaxed break-words">
-                      {item.title}
+                  <div className="min-w-0">
+                    <h3 className="text-base font-bold text-slate-900">
+                      {criteria}
+                    </h3>
+
+                    <p className="text-sm text-slate-400 mt-0.5">
+                      {criteriaActions.length}{" "}
+                      {criteriaActions.length === 1
+                        ? "recommendation"
+                        : "recommendations"}{" "}
+                      · {getCriteriaDescription(criteria)}
                     </p>
                   </div>
-                )}
+                </div>
 
-                {/* Copy-pasteable Solution */}
-                {item.solution && (
-                  <div className="bg-slate-50 border border-slate-200/80 rounded-lg p-3 space-y-1.5">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 block">
-                      Solution
-                    </span>
-                    <div className="bg-white border border-slate-200 rounded-md p-3 text-xs font-mono text-slate-800 break-words select-all leading-relaxed shadow-inner">
-                      {item.solution}
-                    </div>
-                  </div>
-                )}
+                {/* Model Statistics */}
+                {models.map((model) => {
+                  const items = getModelActions(criteria, model);
+                  const count = items.length;
+                  const averageImpact = getAverageImpact(items);
+                  const score = getScore(items);
+                  const colors = getModelColor(model);
 
-                {/* Competitor Products List */}
-                {/* {hasCompetitorProducts && (
-                  <div className="pt-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
-                      Competitor Benchmarks
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {item.competitor_products!.map((product, pIdx) => (
-                        <a
-                          key={pIdx}
-                          href={product.product_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-blue-600 hover:text-blue-800 text-xs font-medium px-2.5 py-1.5 rounded-md transition group"
-                        >
-                          <span className="truncate max-w-[240px]">
-                            {product.product_name || product.competitor_name}
-                          </span>
-                          {product.price && (
-                            <span className="text-[10px] bg-slate-200/80 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
-                              {product.price}
+                  return (
+                    <div
+                      key={model}
+                      className="flex flex-col items-center justify-center"
+                    >
+                      {count > 0 ? (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-lg font-bold text-slate-900">
+                              {count}
                             </span>
-                          )}
-                          <svg
-                            className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition shrink-0"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                            />
-                          </svg>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )} */}
-                {/* Competitor Products List */}
-                {hasCompetitorProducts && (
-                  <div className="pt-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
-                      Competitor Benchmarks
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {item.competitor_products!.map((product, pIdx) => {
-                        const hasUrl = Boolean(
-                          product.product_url &&
-                          product.product_url.trim() !== "",
-                        );
 
-                        // Common Inner Content
-                        const badgeContent = (
-                          <>
-                            <span className="truncate max-w-[240px]">
-                              {product.product_name || product.competitor_name}
+                            <span className="text-xs text-slate-400">
+                              rec{count === 1 ? "" : "s"}
                             </span>
-                            {product.price && (
-                              <span className="text-[10px] bg-slate-200/80 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
-                                {product.price}
-                              </span>
-                            )}
-                            {hasUrl && (
-                              <svg
-                                className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition shrink-0"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                                />
-                              </svg>
-                            )}
-                          </>
-                        );
+                          </div>
 
-                        // Render external link if URL exists
-                        if (hasUrl) {
-                          return (
-                            <a
-                              key={pIdx}
-                              href={product.product_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-blue-600 hover:text-blue-800 text-xs font-medium px-2.5 py-1.5 rounded-md transition group"
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${colors.bar}`}
+                                style={{
+                                  width: `${Math.min(score, 100)}%`,
+                                }}
+                              />
+                            </div>
+
+                            <span
+                              className={`text-sm font-semibold ${colors.text}`}
                             >
-                              {badgeContent}
-                            </a>
-                          );
-                        }
+                              {score}
+                            </span>
+                          </div>
 
-                        // Fallback: Non-clickable tag when URL is missing
+                          <span className="text-xs text-slate-400 mt-2">
+                            avg impact{" "}
+                            {Number.isInteger(averageImpact)
+                              ? averageImpact
+                              : averageImpact.toFixed(1)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-sm text-slate-300">—</span>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Overall Score */}
+                <div className="flex flex-col items-end">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`text-2xl font-bold ${getScoreColor(
+                        overallScore,
+                      )}`}
+                    >
+                      {overallScore}
+                    </span>
+
+                    <svg
+                      className={`w-5 h-5 text-slate-300 transition-transform ${
+                        isExpanded ? "rotate-90" : ""
+                      }`}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </div>
+
+                  <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden mt-2">
+                    <div
+                      className={`h-full rounded-full ${getScoreBarColor(
+                        overallScore,
+                      )}`}
+                      style={{
+                        width: `${Math.min(overallScore, 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Expanded Details */}
+              {isExpanded && (
+                <div className="bg-slate-50/70 border-b border-slate-200 px-6 py-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {models.map((model) => {
+                      const items = getModelActions(criteria, model);
+                      const colors = getModelColor(model);
+
+                      if (!items.length) {
                         return (
                           <div
-                            key={pIdx}
-                            className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium px-2.5 py-1.5 rounded-md cursor-default"
+                            key={model}
+                            className="bg-white border border-slate-200 rounded-2xl p-6"
                           >
-                            {badgeContent}
+                            <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                              <span className={`font-semibold ${colors.text}`}>
+                                {getModelLabel(model)}
+                              </span>
+
+                              <span
+                                className={`text-xs px-3 py-1 rounded-full ${colors.badge}`}
+                              >
+                                0
+                              </span>
+                            </div>
+
+                            <p className="text-sm text-slate-400 mt-6">
+                              No recommendations available.
+                            </p>
                           </div>
                         );
-                      })}
-                    </div>
-                  </div>
-                )}
+                      }
 
-                {/* Legacy Competitors Fallback */}
-                {!hasCompetitorProducts && hasLegacyCompetitors && (
-                  <div className="pt-1 text-xs text-slate-500">
-                    <span className="font-semibold text-slate-400">
-                      Competitors:{" "}
-                    </span>
-                    <span className="text-slate-700 font-medium">
-                      {item
-                        .competitors!.map((c) => c.competitor_name)
-                        .join(", ")}
-                    </span>
+                      return (
+                        <div
+                          key={model}
+                          className="bg-white border border-slate-200 rounded-2xl p-6"
+                        >
+                          {/* Model Header */}
+                          <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                            <div className={colors.text}>
+                              {model === "GPT" && (
+                                <svg
+                                  className="w-5 h-5"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <rect
+                                    x="6"
+                                    y="7"
+                                    width="12"
+                                    height="10"
+                                    rx="2"
+                                  />
+                                  <path d="M9 11h.01M15 11h.01M9 15h6" />
+                                  <path d="M12 3v4M4 11h2M18 11h2" />
+                                </svg>
+                              )}
+
+                              {model === "GEMINI" && (
+                                <svg
+                                  className="w-5 h-5"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <path d="M12 2l1.8 7.2L21 11l-7.2 1.8L12 20l-1.8-7.2L3 11l7.2-1.8L12 2z" />
+                                </svg>
+                              )}
+
+                              {model === "CLAUDE" && (
+                                <svg
+                                  className="w-5 h-5"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <path d="M4 5h16v11H8l-4 4V5z" />
+                                </svg>
+                              )}
+                            </div>
+
+                            <span className="text-lg font-semibold text-slate-700">
+                              {getModelLabel(model)}
+                            </span>
+
+                            <span
+                              className={`text-xs font-semibold px-3 py-1 rounded-full ${colors.badge}`}
+                            >
+                              {items.length}
+                            </span>
+                          </div>
+
+                          {/* Recommendations */}
+                          <div className="space-y-5 mt-5">
+                            {items.map((item: ActionItem, index: number) => {
+                              const hasCompetitorProducts =
+                                Array.isArray(item.competitor_products) &&
+                                item.competitor_products.length > 0;
+
+                              const hasLegacyCompetitors =
+                                Array.isArray(item.competitors) &&
+                                item.competitors.length > 0;
+
+                              return (
+                                <div
+                                  key={index}
+                                  className="border-l-2 border-orange-200 pl-4"
+                                >
+                                  {/* Impact + Effort */}
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-md">
+                                      {item.impact}
+                                    </span>
+
+                                    <span className="text-xs text-slate-400">
+                                      impact
+                                    </span>
+
+                                    <span className="bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1 rounded-full capitalize">
+                                      {item.effort} effort
+                                    </span>
+                                  </div>
+
+                                  {/* Title */}
+                                  {item.title && (
+                                    <h4 className="text-base font-bold text-slate-900 leading-snug">
+                                      {item.title}
+                                    </h4>
+                                  )}
+
+                                  {/* Explanation */}
+                                  {item.query_optimization_tag && (
+                                    <div className="flex items-start gap-2 mt-3">
+                                      <svg
+                                        className="w-4 h-4 text-orange-400 mt-0.5 shrink-0"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                      >
+                                        <path d="M9 18h6M10 22h4M8 14a6 6 0 1110-4c0 2-1 3-2 4-1 1-1 2-1 3H9c0-1 0-2-1-3-1-1-2-2-2-4" />
+                                      </svg>
+
+                                      <p className="text-sm text-slate-500 leading-relaxed">
+                                        {item.query_optimization_tag}
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {/* Solution */}
+                                  {item.solution && (
+                                    <div className="flex items-start gap-2 mt-3">
+                                      <svg
+                                        className="w-4 h-4 text-orange-500 mt-0.5 shrink-0"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3-3a1 1 0 00-1.4-1.4l-2.3 2.3-1.6-1.6a1 1 0 00-1.4 0z"
+                                        />
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          d="M5 21l4-4m0 0l5.5-5.5M9 17l-2-2"
+                                        />
+                                      </svg>
+
+                                      <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                                        {item.solution}
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {/* Competitor Products */}
+                                  {hasCompetitorProducts && (
+                                    <div className="mt-4">
+                                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                                        Competitor Benchmarks
+                                      </span>
+
+                                      <div className="flex flex-wrap gap-2">
+                                        {item.competitor_products!.map(
+                                          (product, pIdx) => {
+                                            const hasUrl = Boolean(
+                                              product.product_url &&
+                                              product.product_url.trim() !== "",
+                                            );
+
+                                            const badgeContent = (
+                                              <>
+                                                <span className="truncate max-w-[180px]">
+                                                  {product.product_name ||
+                                                    product.competitor_name}
+                                                </span>
+
+                                                {product.price && (
+                                                  <span className="text-[10px] bg-slate-200/80 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
+                                                    {product.price}
+                                                  </span>
+                                                )}
+
+                                                {hasUrl && (
+                                                  <svg
+                                                    className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition shrink-0"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                  >
+                                                    <path
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      strokeWidth="2"
+                                                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                                    />
+                                                  </svg>
+                                                )}
+                                              </>
+                                            );
+
+                                            if (hasUrl) {
+                                              return (
+                                                <a
+                                                  key={pIdx}
+                                                  href={product.product_url}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-blue-600 hover:text-blue-800 text-xs font-medium px-2.5 py-1.5 rounded-md transition group"
+                                                >
+                                                  {badgeContent}
+                                                </a>
+                                              );
+                                            }
+
+                                            return (
+                                              <div
+                                                key={pIdx}
+                                                className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium px-2.5 py-1.5 rounded-md"
+                                              >
+                                                {badgeContent}
+                                              </div>
+                                            );
+                                          },
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Legacy Competitors */}
+                                  {!hasCompetitorProducts &&
+                                    hasLegacyCompetitors && (
+                                      <div className="mt-4 text-xs text-slate-500">
+                                        <span className="font-semibold text-slate-400">
+                                          Competitors:{" "}
+                                        </span>
+
+                                        <span className="text-slate-700 font-medium">
+                                          {item
+                                            .competitors!.map(
+                                              (c) => c.competitor_name,
+                                            )
+                                            .join(", ")}
+                                        </span>
+                                      </div>
+                                    )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
+              )}
+            </React.Fragment>
           );
         })}
       </div>
     </div>
   );
 }
-
 export interface ChatSession {
   chat_id: number;
   tenant_id: number;
