@@ -1,4 +1,3 @@
-import React from "react";
 import { useParams, useSearchParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
@@ -914,6 +913,7 @@ interface Competitor {
   no_of_attributes?: number;
 }
 
+
 interface ActionItem {
   type: string;
   effort: string;
@@ -934,137 +934,43 @@ interface RecommendationsProps {
 }
 
 function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
+  const [expanded, setExpanded] = useState(true);
+
   if (isLoading) return <TabSpinnerFallback />;
+
   if (!data || !data.actions) return null;
 
-  const [expandedCriteria, setExpandedCriteria] = React.useState<string | null>(
-    data.actions.length > 0 ? data.actions[0].type : null,
-  );
-
-  const models = ["GPT", "GEMINI", "CLAUDE"];
+  const actions = data.actions;
 
   const getModelName = (model: string) => {
     const value = model?.replace("LLMModels.", "").toUpperCase();
 
-    if (value === "GPT" || value === "CHATGPT") return "GPT";
-    if (value === "GEMINI") return "GEMINI";
-    if (value === "CLAUDE") return "CLAUDE";
+    if (value === "GPT" || value === "CHATGPT") {
+      return "GPT";
+    }
+
+    if (value === "GEMINI") {
+      return "GEMINI";
+    }
+
+    if (value === "CLAUDE") {
+      return "CLAUDE";
+    }
 
     return value;
   };
 
-  const getModelLabel = (model: string) => {
-    if (model === "GPT") return "ChatGPT";
-    if (model === "GEMINI") return "Gemini";
-    if (model === "CLAUDE") return "Claude";
+  const chatGPTActions = actions.filter(
+    (item) => getModelName(item.model) === "GPT",
+  );
 
-    return model;
-  };
+  const geminiActions = actions.filter(
+    (item) => getModelName(item.model) === "GEMINI",
+  );
 
-  const getModelColor = (model: string) => {
-    if (model === "GPT") {
-      return {
-        text: "text-emerald-500",
-        bg: "bg-emerald-50",
-        border: "border-emerald-200",
-        bar: "bg-emerald-500",
-        badge: "bg-emerald-100 text-emerald-600",
-      };
-    }
-
-    if (model === "GEMINI") {
-      return {
-        text: "text-blue-500",
-        bg: "bg-blue-50",
-        border: "border-blue-200",
-        bar: "bg-blue-500",
-        badge: "bg-blue-100 text-blue-600",
-      };
-    }
-
-    return {
-      text: "text-orange-500",
-      bg: "bg-orange-50",
-      border: "border-orange-200",
-      bar: "bg-orange-500",
-      badge: "bg-orange-100 text-orange-600",
-    };
-  };
-
-  const getCriteriaName = (type: string) => {
-    const value = type?.toLowerCase();
-
-    switch (value) {
-      case "title":
-        return "Title";
-      case "description":
-        return "Description";
-      case "features":
-      case "feature":
-        return "Features";
-      case "attributes":
-      case "attribute":
-        return "Attributes";
-      case "assets":
-      case "asset":
-        return "Assets";
-      case "pricing":
-      case "price":
-        return "Pricing";
-      default:
-        return type ? type.charAt(0).toUpperCase() + type.slice(1) : "Other";
-    }
-  };
-
-  const getCriteriaDescription = (criteria: string) => {
-    switch (criteria.toLowerCase()) {
-      case "title":
-        return "Title tag & headings";
-      case "description":
-        return "Product description copy";
-      case "features":
-        return "Feature lists & bullets";
-      case "attributes":
-        return "Specs & identifiers";
-      case "assets":
-        return "Images, video & media";
-      case "pricing":
-        return "Price display & schema";
-      default:
-        return "Product content optimization";
-    }
-  };
-
-  const getCriteriaIcon = (criteria: string) => {
-    switch (criteria.toLowerCase()) {
-      case "title":
-        return "T";
-      case "description":
-        return "D";
-      case "features":
-        return "F";
-      case "attributes":
-        return "A";
-      case "assets":
-        return "As";
-      case "pricing":
-        return "$";
-      default:
-        return "•";
-    }
-  };
-
-  const getCriteriaActions = (criteria: string) => {
-    return data.actions!.filter(
-      (item) => getCriteriaName(item.type) === criteria,
-    );
-  };
-
-  const getModelActions = (criteria: string, model: string) => {
-    return getCriteriaActions(criteria).filter(
-      (item) => getModelName(item.model) === model,
-    );
-  };
+  const claudeActions = actions.filter(
+    (item) => getModelName(item.model) === "CLAUDE",
+  );
 
   const getAverageImpact = (items: ActionItem[]) => {
     if (!items.length) return 0;
@@ -1081,25 +987,23 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
     return Math.round(getAverageImpact(items) * 10);
   };
 
-  const getOverallScore = (criteria: string) => {
-    const scores = models
-      .map((model) => getScore(getModelActions(criteria, model)))
-      .filter((score) => score > 0);
+  const chatGPTScore = getScore(chatGPTActions);
+  const geminiScore = getScore(geminiActions);
+  const claudeScore = getScore(claudeActions);
 
-    if (!scores.length) return 0;
-
-    return Math.round(
-      scores.reduce((sum, score) => sum + score, 0) / scores.length,
-    );
-  };
-
-  const criteriaList = Array.from(
-    new Set(data.actions.map((item) => getCriteriaName(item.type))),
+  const availableScores = [chatGPTScore, geminiScore, claudeScore].filter(
+    (score) => score > 0,
   );
+
+  const overallScore = availableScores.length
+    ? Math.round(
+        availableScores.reduce((sum, score) => sum + score, 0) /
+          availableScores.length,
+      )
+    : 0;
 
   const getScoreColor = (score: number) => {
     if (score >= 70) return "text-emerald-500";
-    if (score >= 50) return "text-orange-500";
     return "text-orange-500";
   };
 
@@ -1108,507 +1012,537 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
     return "bg-orange-500";
   };
 
+  const getModelColors = (model: string) => {
+    if (model === "GPT") {
+      return {
+        text: "text-emerald-500",
+        bar: "bg-emerald-500",
+        badge: "bg-emerald-50 text-emerald-600 border-emerald-200",
+      };
+    }
 
-  const toggleCriteria = (criteria: string) => {
-    setExpandedCriteria((current) => (current === criteria ? null : criteria));
+    if (model === "GEMINI") {
+      return {
+        text: "text-blue-500",
+        bar: "bg-blue-500",
+        badge: "bg-blue-50 text-blue-600 border-blue-200",
+      };
+    }
+
+    return {
+      text: "text-orange-500",
+      bar: "bg-orange-500",
+      badge: "bg-orange-50 text-orange-600 border-orange-200",
+    };
+  };
+
+  const getModelLabel = (model: string) => {
+    if (model === "GPT") return "ChatGPT";
+    if (model === "GEMINI") return "Gemini";
+    if (model === "CLAUDE") return "Claude";
+
+    return model;
+  };
+
+  const getModelIcon = (model: string) => {
+    if (model === "GPT") {
+      return (
+        <svg
+          className="w-5 h-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <rect x="6" y="7" width="12" height="10" rx="2" />
+          <path d="M9 11h.01M15 11h.01M9 15h6" />
+          <path d="M12 3v4M4 11h2M18 11h2" />
+        </svg>
+      );
+    }
+
+    if (model === "GEMINI") {
+      return (
+        <svg
+          className="w-5 h-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M12 2l1.8 7.2L21 11l-7.2 1.8L12 20l-1.8-7.2L3 11l7.2-1.8L12 2z" />
+        </svg>
+      );
+    }
+
+    return (
+      <svg
+        className="w-5 h-5"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <path d="M4 5h16v11H8l-4 4V5z" />
+      </svg>
+    );
+  };
+
+  const renderRecommendation = (item: ActionItem, index: number) => {
+    const hasCompetitorProducts =
+      Array.isArray(item.competitor_products) &&
+      item.competitor_products.length > 0;
+
+    const hasLegacyCompetitors =
+      Array.isArray(item.competitors) && item.competitors.length > 0;
+
+    return (
+      <div key={index} className="border-l-2 border-orange-200 pl-4">
+        {/* Impact + Effort */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-md">
+            {item.impact}
+          </span>
+
+          <span className="text-xs text-slate-400">impact</span>
+
+          {item.effort && (
+            <span className="bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1 rounded-full capitalize">
+              {item.effort} effort
+            </span>
+          )}
+
+          {item.type && (
+            <span className="bg-orange-50 text-orange-600 border border-orange-100 text-xs font-semibold px-3 py-1 rounded-full capitalize">
+              {item.type}
+            </span>
+          )}
+        </div>
+
+        {/* Recommendation Title */}
+        {item.title && (
+          <h4 className="text-base font-bold text-slate-900 leading-snug">
+            {item.title}
+          </h4>
+        )}
+
+        {/* Recommendation Explanation */}
+        {item.query_optimization_tag && (
+          <div className="flex items-start gap-2 mt-3">
+            <svg
+              className="w-4 h-4 text-orange-400 mt-0.5 shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M9 18h6M10 22h4M8 14a6 6 0 1110-4c0 2-1 3-2 4-1 1-1 2-1 3H9c0-1 0-2-1-3-1-1-2-2-2-4" />
+            </svg>
+
+            <p className="text-sm text-slate-500 leading-relaxed">
+              {item.query_optimization_tag}
+            </p>
+          </div>
+        )}
+
+        {/* Solution */}
+        {item.solution && (
+          <div className="flex items-start gap-2 mt-3">
+            <svg
+              className="w-4 h-4 text-orange-500 mt-0.5 shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3-3a1 1 0 00-1.4-1.4l-2.3 2.3-1.6-1.6a1 1 0 00-1.4 0z"
+              />
+
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 21l4-4m0 0l5.5-5.5M9 17l-2-2"
+              />
+            </svg>
+
+            <p className="text-sm text-slate-600 font-medium leading-relaxed">
+              {item.solution}
+            </p>
+          </div>
+        )}
+
+        {/* Competitor Products */}
+        {hasCompetitorProducts && (
+          <div className="mt-4">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+              Competitor Benchmarks
+            </span>
+
+            <div className="flex flex-wrap gap-2">
+              {item.competitor_products!.map((product, pIdx) => {
+                const hasUrl = Boolean(
+                  product.product_url && product.product_url.trim() !== "",
+                );
+
+                const badgeContent = (
+                  <>
+                    <span className="truncate max-w-[220px]">
+                      {product.product_name || product.competitor_name}
+                    </span>
+
+                    {product.price && (
+                      <span className="text-[10px] bg-slate-200/80 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
+                        {product.price}
+                      </span>
+                    )}
+
+                    {hasUrl && (
+                      <svg
+                        className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        />
+                      </svg>
+                    )}
+                  </>
+                );
+
+                if (hasUrl) {
+                  return (
+                    <a
+                      key={pIdx}
+                      href={product.product_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-blue-600 hover:text-blue-800 text-xs font-medium px-2.5 py-1.5 rounded-md transition group"
+                    >
+                      {badgeContent}
+                    </a>
+                  );
+                }
+
+                return (
+                  <div
+                    key={pIdx}
+                    className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium px-2.5 py-1.5 rounded-md"
+                  >
+                    {badgeContent}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Legacy Competitors */}
+        {!hasCompetitorProducts && hasLegacyCompetitors && (
+          <div className="mt-4 text-xs text-slate-500">
+            <span className="font-semibold text-slate-400">Competitors: </span>
+
+            <span className="text-slate-700 font-medium">
+              {item.competitors!.map((c) => c.competitor_name).join(", ")}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderModelColumn = (model: string, modelActions: ActionItem[]) => {
+    const colors = getModelColors(model);
+    const score = getScore(modelActions);
+    const averageImpact = getAverageImpact(modelActions);
+
+    return (
+      <div
+        key={model}
+        className="bg-white border border-slate-200 rounded-2xl p-6"
+      >
+        {/* Model Header */}
+        <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+          <div className={colors.text}>{getModelIcon(model)}</div>
+
+          <span className="text-lg font-semibold text-slate-700">
+            {getModelLabel(model)}
+          </span>
+
+          <span
+            className={`text-xs font-semibold px-3 py-1 rounded-full border ${colors.badge}`}
+          >
+            {modelActions.length}
+          </span>
+        </div>
+
+        {/* Model Score */}
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-slate-400">Score</span>
+
+            <span className={`text-sm font-bold ${getScoreColor(score)}`}>
+              {score}
+            </span>
+          </div>
+
+          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full ${getScoreBarColor(score)}`}
+              style={{
+                width: `${Math.min(score, 100)}%`,
+              }}
+            />
+          </div>
+
+          <div className="text-xs text-slate-400 mt-2">
+            avg impact{" "}
+            {Number.isInteger(averageImpact)
+              ? averageImpact
+              : averageImpact.toFixed(1)}
+          </div>
+        </div>
+
+        {/* All Recommendations */}
+        <div className="space-y-6 mt-6">
+          {modelActions.map((item, index) => renderRecommendation(item, index))}
+        </div>
+      </div>
+    );
   };
 
   return (
     <div className="space-y-4">
       {/* Description */}
       <p className="text-sm text-slate-500 px-1">
-        Recommendation statistics by content criteria. Click any row to see the
+        Recommendation statistics by content criteria. Click the row to see all
         detailed recommendations for each LLM engine.
       </p>
 
-      {/* Summary Table */}
+      {/* Main Recommendation Box */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-        {/* Table Header */}
+        {/* Header */}
         <div className="grid grid-cols-[minmax(280px,1.8fr)_1fr_1fr_1fr_120px] bg-slate-50/70 border-b border-slate-200 px-6 py-4">
           <div className="text-xs font-bold text-slate-400 uppercase">
             Criteria
           </div>
 
-          {models.map((model) => {
-            const colors = getModelColor(model);
+          <div className="flex items-center gap-2 text-xs font-bold text-emerald-500 uppercase">
+            {getModelIcon("GPT")}
+            ChatGPT
+          </div>
 
-            return (
-              <div
-                key={model}
-                className={`flex items-center gap-2 text-xs font-bold uppercase ${colors.text}`}
-              >
-                {model === "GPT" && (
-                  <svg
-                    className="w-4 h-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <rect x="6" y="7" width="12" height="10" rx="2" />
-                    <path d="M9 11h.01M15 11h.01M9 15h6" />
-                    <path d="M12 3v4M4 11h2M18 11h2" />
-                  </svg>
-                )}
+          <div className="flex items-center gap-2 text-xs font-bold text-blue-500 uppercase">
+            {getModelIcon("GEMINI")}
+            Gemini
+          </div>
 
-                {model === "GEMINI" && (
-                  <svg
-                    className="w-5 h-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M12 2l1.8 7.2L21 11l-7.2 1.8L12 20l-1.8-7.2L3 11l7.2-1.8L12 2z" />
-                  </svg>
-                )}
-
-                {model === "CLAUDE" && (
-                  <svg
-                    className="w-5 h-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M4 5h16v11H8l-4 4V5z" />
-                  </svg>
-                )}
-
-                {getModelLabel(model)}
-              </div>
-            );
-          })}
+          <div className="flex items-center gap-2 text-xs font-bold text-orange-500 uppercase">
+            {getModelIcon("CLAUDE")}
+            Claude
+          </div>
 
           <div className="text-xs font-bold text-slate-400 uppercase text-right">
             Score
           </div>
         </div>
 
-        {/* Criteria Rows */}
-        {criteriaList.map((criteria) => {
-          const criteriaActions = getCriteriaActions(criteria);
-          const overallScore = getOverallScore(criteria);
-          const isExpanded = expandedCriteria === criteria;
+        {/* Single Overall Row */}
+        <div
+          onClick={() => setExpanded(!expanded)}
+          className="grid grid-cols-[minmax(280px,1.8fr)_1fr_1fr_1fr_120px] items-center px-6 py-6 cursor-pointer hover:bg-slate-50/60 transition-colors"
+        >
+          {/* Criteria */}
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+              <span className="text-orange-500 font-bold text-sm">R</span>
+            </div>
 
-          return (
-            <React.Fragment key={criteria}>
-              <div
-                onClick={() => toggleCriteria(criteria)}
-                className={`grid grid-cols-[minmax(280px,1.8fr)_1fr_1fr_1fr_120px] items-center px-6 py-5 cursor-pointer transition-colors ${
-                  isExpanded ? "bg-slate-50/40" : "hover:bg-slate-50/60"
-                } ${!isExpanded ? "border-b border-slate-100" : ""}`}
-              >
-                {/* Criteria */}
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
-                    <span className="text-orange-500 font-bold text-sm">
-                      {getCriteriaIcon(criteria)}
-                    </span>
-                  </div>
+            <div className="min-w-0">
+              <h3 className="text-base font-bold text-slate-900">
+                Recommendations
+              </h3>
 
-                  <div className="min-w-0">
-                    <h3 className="text-base font-bold text-slate-900">
-                      {criteria}
-                    </h3>
+              <p className="text-sm text-slate-400 mt-0.5">
+                {actions.length}{" "}
+                {actions.length === 1 ? "recommendation" : "recommendations"} ·
+                All content optimization recommendations
+              </p>
+            </div>
+          </div>
 
-                    <p className="text-sm text-slate-400 mt-0.5">
-                      {criteriaActions.length}{" "}
-                      {criteriaActions.length === 1
-                        ? "recommendation"
-                        : "recommendations"}{" "}
-                      · {getCriteriaDescription(criteria)}
-                    </p>
-                  </div>
-                </div>
+          {/* ChatGPT */}
+          <div className="flex flex-col items-center justify-center">
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg font-bold text-slate-900">
+                {chatGPTActions.length}
+              </span>
 
-                {/* Model Statistics */}
-                {models.map((model) => {
-                  const items = getModelActions(criteria, model);
-                  const count = items.length;
-                  const averageImpact = getAverageImpact(items);
-                  const score = getScore(items);
-                  const colors = getModelColor(model);
+              <span className="text-xs text-slate-400">
+                rec
+                {chatGPTActions.length === 1 ? "" : "s"}
+              </span>
+            </div>
 
-                  return (
-                    <div
-                      key={model}
-                      className="flex flex-col items-center justify-center"
-                    >
-                      {count > 0 ? (
-                        <>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-lg font-bold text-slate-900">
-                              {count}
-                            </span>
-
-                            <span className="text-xs text-slate-400">
-                              rec{count === 1 ? "" : "s"}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-2 mt-2">
-                            <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${colors.bar}`}
-                                style={{
-                                  width: `${Math.min(score, 100)}%`,
-                                }}
-                              />
-                            </div>
-
-                            <span
-                              className={`text-sm font-semibold ${colors.text}`}
-                            >
-                              {score}
-                            </span>
-                          </div>
-
-                          <span className="text-xs text-slate-400 mt-2">
-                            avg impact{" "}
-                            {Number.isInteger(averageImpact)
-                              ? averageImpact
-                              : averageImpact.toFixed(1)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-sm text-slate-300">—</span>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* Overall Score */}
-                <div className="flex flex-col items-end">
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`text-2xl font-bold ${getScoreColor(
-                        overallScore,
-                      )}`}
-                    >
-                      {overallScore}
-                    </span>
-
-                    <svg
-                      className={`w-5 h-5 text-slate-300 transition-transform ${
-                        isExpanded ? "rotate-90" : ""
-                      }`}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </div>
-
-                  <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden mt-2">
-                    <div
-                      className={`h-full rounded-full ${getScoreBarColor(
-                        overallScore,
-                      )}`}
-                      style={{
-                        width: `${Math.min(overallScore, 100)}%`,
-                      }}
-                    />
-                  </div>
-                </div>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full"
+                  style={{
+                    width: `${Math.min(chatGPTScore, 100)}%`,
+                  }}
+                />
               </div>
 
-              {/* Expanded Details */}
-              {isExpanded && (
-                <div className="bg-slate-50/70 border-b border-slate-200 px-6 py-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {models.map((model) => {
-                      const items = getModelActions(criteria, model);
-                      const colors = getModelColor(model);
+              <span className="text-sm font-semibold text-emerald-500">
+                {chatGPTScore}
+              </span>
+            </div>
 
-                      if (!items.length) {
-                        return (
-                          <div
-                            key={model}
-                            className="bg-white border border-slate-200 rounded-2xl p-6"
-                          >
-                            <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                              <span className={`font-semibold ${colors.text}`}>
-                                {getModelLabel(model)}
-                              </span>
+            <span className="text-xs text-slate-400 mt-2">
+              avg impact{" "}
+              {Number.isInteger(getAverageImpact(chatGPTActions))
+                ? getAverageImpact(chatGPTActions)
+                : getAverageImpact(chatGPTActions).toFixed(1)}
+            </span>
+          </div>
 
-                              <span
-                                className={`text-xs px-3 py-1 rounded-full ${colors.badge}`}
-                              >
-                                0
-                              </span>
-                            </div>
+          {/* Gemini */}
+          <div className="flex flex-col items-center justify-center">
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg font-bold text-slate-900">
+                {geminiActions.length}
+              </span>
 
-                            <p className="text-sm text-slate-400 mt-6">
-                              No recommendations available.
-                            </p>
-                          </div>
-                        );
-                      }
+              <span className="text-xs text-slate-400">
+                rec
+                {geminiActions.length === 1 ? "" : "s"}
+              </span>
+            </div>
 
-                      return (
-                        <div
-                          key={model}
-                          className="bg-white border border-slate-200 rounded-2xl p-6"
-                        >
-                          {/* Model Header */}
-                          <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                            <div className={colors.text}>
-                              {model === "GPT" && (
-                                <svg
-                                  className="w-5 h-5"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                >
-                                  <rect
-                                    x="6"
-                                    y="7"
-                                    width="12"
-                                    height="10"
-                                    rx="2"
-                                  />
-                                  <path d="M9 11h.01M15 11h.01M9 15h6" />
-                                  <path d="M12 3v4M4 11h2M18 11h2" />
-                                </svg>
-                              )}
+            <div className="flex items-center gap-2 mt-2">
+              <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 rounded-full"
+                  style={{
+                    width: `${Math.min(geminiScore, 100)}%`,
+                  }}
+                />
+              </div>
 
-                              {model === "GEMINI" && (
-                                <svg
-                                  className="w-5 h-5"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                >
-                                  <path d="M12 2l1.8 7.2L21 11l-7.2 1.8L12 20l-1.8-7.2L3 11l7.2-1.8L12 2z" />
-                                </svg>
-                              )}
+              <span className="text-sm font-semibold text-blue-500">
+                {geminiScore}
+              </span>
+            </div>
 
-                              {model === "CLAUDE" && (
-                                <svg
-                                  className="w-5 h-5"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                >
-                                  <path d="M4 5h16v11H8l-4 4V5z" />
-                                </svg>
-                              )}
-                            </div>
+            <span className="text-xs text-slate-400 mt-2">
+              avg impact{" "}
+              {Number.isInteger(getAverageImpact(geminiActions))
+                ? getAverageImpact(geminiActions)
+                : getAverageImpact(geminiActions).toFixed(1)}
+            </span>
+          </div>
 
-                            <span className="text-lg font-semibold text-slate-700">
-                              {getModelLabel(model)}
-                            </span>
+          {/* Claude */}
+          <div className="flex flex-col items-center justify-center">
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg font-bold text-slate-900">
+                {claudeActions.length}
+              </span>
 
-                            <span
-                              className={`text-xs font-semibold px-3 py-1 rounded-full ${colors.badge}`}
-                            >
-                              {items.length}
-                            </span>
-                          </div>
+              <span className="text-xs text-slate-400">
+                rec
+                {claudeActions.length === 1 ? "" : "s"}
+              </span>
+            </div>
 
-                          {/* Recommendations */}
-                          <div className="space-y-5 mt-5">
-                            {items.map((item: ActionItem, index: number) => {
-                              const hasCompetitorProducts =
-                                Array.isArray(item.competitor_products) &&
-                                item.competitor_products.length > 0;
+            <div className="flex items-center gap-2 mt-2">
+              <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-orange-500 rounded-full"
+                  style={{
+                    width: `${Math.min(claudeScore, 100)}%`,
+                  }}
+                />
+              </div>
 
-                              const hasLegacyCompetitors =
-                                Array.isArray(item.competitors) &&
-                                item.competitors.length > 0;
+              <span className="text-sm font-semibold text-orange-500">
+                {claudeScore}
+              </span>
+            </div>
 
-                              return (
-                                <div
-                                  key={index}
-                                  className="border-l-2 border-orange-200 pl-4"
-                                >
-                                  {/* Impact + Effort */}
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-md">
-                                      {item.impact}
-                                    </span>
+            <span className="text-xs text-slate-400 mt-2">
+              avg impact{" "}
+              {Number.isInteger(getAverageImpact(claudeActions))
+                ? getAverageImpact(claudeActions)
+                : getAverageImpact(claudeActions).toFixed(1)}
+            </span>
+          </div>
 
-                                    <span className="text-xs text-slate-400">
-                                      impact
-                                    </span>
+          {/* Overall Score */}
+          <div className="flex flex-col items-end">
+            <div className="flex items-center gap-3">
+              <span
+                className={`text-2xl font-bold ${getScoreColor(overallScore)}`}
+              >
+                {overallScore}
+              </span>
 
-                                    <span className="bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1 rounded-full capitalize">
-                                      {item.effort} effort
-                                    </span>
-                                  </div>
+              <svg
+                className={`w-5 h-5 text-slate-300 transition-transform ${
+                  expanded ? "rotate-90" : ""
+                }`}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
 
-                                  {/* Title */}
-                                  {item.title && (
-                                    <h4 className="text-base font-bold text-slate-900 leading-snug">
-                                      {item.title}
-                                    </h4>
-                                  )}
+            <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden mt-2">
+              <div
+                className={`h-full rounded-full ${getScoreBarColor(
+                  overallScore,
+                )}`}
+                style={{
+                  width: `${Math.min(overallScore, 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
 
-                                  {/* Explanation */}
-                                  {item.query_optimization_tag && (
-                                    <div className="flex items-start gap-2 mt-3">
-                                      <svg
-                                        className="w-4 h-4 text-orange-400 mt-0.5 shrink-0"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                      >
-                                        <path d="M9 18h6M10 22h4M8 14a6 6 0 1110-4c0 2-1 3-2 4-1 1-1 2-1 3H9c0-1 0-2-1-3-1-1-2-2-2-4" />
-                                      </svg>
+        {/* Expanded Recommendations */}
+        {expanded && (
+          <div className="bg-slate-50/70 border-t border-slate-200 p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {renderModelColumn("GPT", chatGPTActions)}
 
-                                      <p className="text-sm text-slate-500 leading-relaxed">
-                                        {item.query_optimization_tag}
-                                      </p>
-                                    </div>
-                                  )}
+              {renderModelColumn("GEMINI", geminiActions)}
 
-                                  {/* Solution */}
-                                  {item.solution && (
-                                    <div className="flex items-start gap-2 mt-3">
-                                      <svg
-                                        className="w-4 h-4 text-orange-500 mt-0.5 shrink-0"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3-3a1 1 0 00-1.4-1.4l-2.3 2.3-1.6-1.6a1 1 0 00-1.4 0z"
-                                        />
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          d="M5 21l4-4m0 0l5.5-5.5M9 17l-2-2"
-                                        />
-                                      </svg>
-
-                                      <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                                        {item.solution}
-                                      </p>
-                                    </div>
-                                  )}
-
-                                  {/* Competitor Products */}
-                                  {hasCompetitorProducts && (
-                                    <div className="mt-4">
-                                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
-                                        Competitor Benchmarks
-                                      </span>
-
-                                      <div className="flex flex-wrap gap-2">
-                                        {item.competitor_products!.map(
-                                          (product, pIdx) => {
-                                            const hasUrl = Boolean(
-                                              product.product_url &&
-                                              product.product_url.trim() !== "",
-                                            );
-
-                                            const badgeContent = (
-                                              <>
-                                                <span className="truncate max-w-[180px]">
-                                                  {product.product_name ||
-                                                    product.competitor_name}
-                                                </span>
-
-                                                {product.price && (
-                                                  <span className="text-[10px] bg-slate-200/80 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
-                                                    {product.price}
-                                                  </span>
-                                                )}
-
-                                                {hasUrl && (
-                                                  <svg
-                                                    className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition shrink-0"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                  >
-                                                    <path
-                                                      strokeLinecap="round"
-                                                      strokeLinejoin="round"
-                                                      strokeWidth="2"
-                                                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                                                    />
-                                                  </svg>
-                                                )}
-                                              </>
-                                            );
-
-                                            if (hasUrl) {
-                                              return (
-                                                <a
-                                                  key={pIdx}
-                                                  href={product.product_url}
-                                                  target="_blank"
-                                                  rel="noopener noreferrer"
-                                                  className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-blue-600 hover:text-blue-800 text-xs font-medium px-2.5 py-1.5 rounded-md transition group"
-                                                >
-                                                  {badgeContent}
-                                                </a>
-                                              );
-                                            }
-
-                                            return (
-                                              <div
-                                                key={pIdx}
-                                                className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium px-2.5 py-1.5 rounded-md"
-                                              >
-                                                {badgeContent}
-                                              </div>
-                                            );
-                                          },
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Legacy Competitors */}
-                                  {!hasCompetitorProducts &&
-                                    hasLegacyCompetitors && (
-                                      <div className="mt-4 text-xs text-slate-500">
-                                        <span className="font-semibold text-slate-400">
-                                          Competitors:{" "}
-                                        </span>
-
-                                        <span className="text-slate-700 font-medium">
-                                          {item
-                                            .competitors!.map(
-                                              (c) => c.competitor_name,
-                                            )
-                                            .join(", ")}
-                                        </span>
-                                      </div>
-                                    )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </React.Fragment>
-          );
-        })}
+              {renderModelColumn("CLAUDE", claudeActions)}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+
 export interface ChatSession {
   chat_id: number;
   tenant_id: number;
