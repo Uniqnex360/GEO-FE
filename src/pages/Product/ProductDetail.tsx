@@ -23,6 +23,7 @@ import {
 } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProdoctGenerateContent from "./ProductGenerateContent";
+import ActualContentTabContent from "./ProductActualContentTab";
 
 export default function ProductDashboard() {
   const { id } = useParams();
@@ -69,8 +70,6 @@ export default function ProductDashboard() {
   // @ts-ignore
   const { productInfo, tabData } = dashboardData || {};
 
-  console.log("product info", productInfo);
-
   useEffect(() => {
     if (productInfo) {
       setCachedProductInfo(productInfo);
@@ -81,6 +80,7 @@ export default function ProductDashboard() {
     { id: "visibility", label: "Visibility" },
     { id: "competitor", label: "Competitor Analysis" },
     { id: "citation", label: "Citation Intelligence" },
+    { id: "actual_content", label: "Actual Content" },
     { id: "recommendations", label: "Recommendations" },
     { id: "generate_content", label: "Generate Content" },
     // { id: "tips", label: "Suggestions" },
@@ -285,6 +285,12 @@ export default function ProductDashboard() {
           )}
           {activeTab === "generate_content" && (
             <ProdoctGenerateContent productInfo={displayProductInfo} />
+          )}
+          {activeTab === "actual_content" && (
+            <ActualContentTabContent
+              data={tabData?.actual_content}
+              isLoading={isLoading}
+            />
           )}
         </main>
       </div>
@@ -913,7 +919,6 @@ interface Competitor {
   no_of_attributes?: number;
 }
 
-
 interface ActionItem {
   type: string;
   effort: string;
@@ -1541,7 +1546,6 @@ function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
     </div>
   );
 }
-
 
 export interface ChatSession {
   chat_id: number;
