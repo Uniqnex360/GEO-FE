@@ -178,6 +178,7 @@ export default function Dashboard() {
           <h3 className="text-base font-bold text-slate-900 mb-4">
             Visibility Trend (Last 30 Days)
           </h3>
+
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
@@ -196,23 +197,28 @@ export default function Dashboard() {
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.01} />
                   </linearGradient>
                 </defs>
+
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
                   stroke="#f1f5f9"
                 />
+
                 <XAxis
                   dataKey="date"
                   tickLine={false}
                   axisLine={false}
                   tick={{ fill: "#94a3b8", fontSize: 11 }}
                 />
+
                 <YAxis
                   tickLine={false}
                   axisLine={false}
                   tick={{ fill: "#94a3b8", fontSize: 11 }}
                 />
+
                 <Tooltip />
+
                 <Line
                   type="monotone"
                   dataKey="score"
@@ -232,6 +238,7 @@ export default function Dashboard() {
           <h3 className="text-base font-bold text-slate-900 mb-4">
             Visibility by AI Engine
           </h3>
+
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -244,12 +251,14 @@ export default function Dashboard() {
                   horizontal={false}
                   stroke="#f1f5f9"
                 />
+
                 <XAxis
                   type="number"
                   tickLine={false}
                   axisLine={false}
                   tick={{ fill: "#94a3b8", fontSize: 11 }}
                 />
+
                 <YAxis
                   dataKey="name"
                   type="category"
@@ -257,7 +266,9 @@ export default function Dashboard() {
                   axisLine={false}
                   tick={{ fill: "#64748b", fontSize: 11 }}
                 />
+
                 <Tooltip />
+
                 <Bar dataKey="score" radius={[0, 4, 4, 0]} barSize={24}>
                   {data.visualizations.visibilityByAIEngine.map(
                     //@ts-ignore
@@ -276,55 +287,64 @@ export default function Dashboard() {
       </div>
 
       {/* --- Visualizations Section - Row 2 --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Citation Sources (Pie Chart Layout) */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm lg:col-span-1">
-          <h3 className="text-base font-bold text-slate-900 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Citation Sources */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 className="text-base font-bold text-slate-900 mb-3">
             Citation Sources
           </h3>
-          <div className="h-56 flex flex-col items-center justify-center">
-            <ResponsiveContainer width="100%" height="80%">
-              <PieChart>
-                <Pie
-                  data={data.visualizations.citationSourcesPie}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={75}
-                  paddingAngle={3}
-                  dataKey="percentage"
-                  nameKey="source"
-                >
-                  {data.visualizations.citationSourcesPie.map(
-                    //@ts-ignore
-                    (entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={pieColors[index % pieColors.length]}
-                      />
-                    ),
-                  )}
-                </Pie>
-                <Tooltip formatter={(value) => `${value}%`} />
-              </PieChart>
-            </ResponsiveContainer>
 
-            {/* Legend Mapping Custom Matrix Grid matching screenshot */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 w-full px-2 text-xs font-medium text-slate-600 mt-2">
+          <div className="h-56">
+            <div className="h-36 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data.visualizations.citationSourcesPie}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={48}
+                    outerRadius={68}
+                    paddingAngle={3}
+                    dataKey="percentage"
+                    nameKey="source"
+                  >
+                    {data.visualizations.citationSourcesPie.map(
+                      //@ts-ignore
+                      (entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={pieColors[index % pieColors.length]}
+                        />
+                      ),
+                    )}
+                  </Pie>
+
+                  <Tooltip formatter={(value) => `${value}%`} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Legend */}
+            <div className="grid grid-cols-2 gap-x-8 gap-y-1 px-2 text-xs font-medium text-slate-600">
               {data.visualizations.citationSourcesPie.map(
                 //@ts-ignore
                 (entry, idx) => (
-                  <div key={idx} className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 truncate">
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between min-w-0"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
                       <span
                         className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                         style={{
                           backgroundColor: pieColors[idx % pieColors.length],
                         }}
-                      ></span>
+                      />
+
                       <span className="truncate">{entry.source}</span>
                     </div>
-                    <span className="font-bold text-slate-900 ml-1">
+
+                    <span className="font-bold text-slate-900 ml-2 flex-shrink-0">
                       {entry.percentage}%
                     </span>
                   </div>
@@ -335,11 +355,12 @@ export default function Dashboard() {
         </div>
 
         {/* Competitor Share of Voice */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm lg:col-span-2">
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <h3 className="text-base font-bold text-slate-900 mb-4">
             Competitor Share of Voice
           </h3>
-          <div className="h-56">
+
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={data.visualizations.competitorShareOfVoiceBar}
@@ -350,18 +371,22 @@ export default function Dashboard() {
                   vertical={false}
                   stroke="#f1f5f9"
                 />
+
                 <XAxis
                   dataKey="brand"
                   tickLine={false}
                   axisLine={false}
                   tick={{ fill: "#64748b", fontSize: 11 }}
                 />
+
                 <YAxis
                   tickLine={false}
                   axisLine={false}
                   tick={{ fill: "#94a3b8", fontSize: 11 }}
                 />
+
                 <Tooltip />
+
                 <Bar dataKey="score" radius={[4, 4, 0, 0]} barSize={50}>
                   {data.visualizations.competitorShareOfVoiceBar.map(
                     //@ts-ignore

@@ -151,7 +151,7 @@ export default function Layout() {
       {/* SIDEBAR */}
       <aside
         className={`bg-white text-slate-900 flex flex-col transition-all duration-300 ${
-          collapsed ? "w-20" : "w-64"
+          collapsed ? "w-20" : "w-50"
         }`}
       >
         {/* Logo */}
