@@ -35,6 +35,7 @@ import { useSelector } from "react-redux";
 // Assuming your service layer is located here
 import { citationService } from "../../api/citation";
 import { selectGlobalProjectId } from "../../store/projectSlice";
+import UniqueCitationsTable from "./CitationTable";
 
 // ------------------------------------------------------------------
 // TypeScript Interfaces Matching the API Payload Contract
@@ -538,6 +539,8 @@ export default function CitationIntelligence() {
           </div>
         </div>
       </section>
+
+      <UniqueCitationsTable />
     </div>
   );
 }
