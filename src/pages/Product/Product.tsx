@@ -69,6 +69,8 @@ export default function Product() {
 
   const reduxProjectId = useSelector(selectGlobalProjectId);
 
+  console.log("reuc", reduxProjectId);
+
   // ==========================================
   // UI State
   // ==========================================
@@ -218,7 +220,7 @@ export default function Product() {
   const user = tokenStorage.getUser();
   const isAdmin = user?.is_super_admin;
 
-  console.log("user",user, isAdmin)
+  console.log("user", user, isAdmin);
 
   const handleMutationSuccess = (message: string, close?: () => void) => {
     toast.success(message);
@@ -478,6 +480,9 @@ export default function Product() {
             <ExcelUploadButton
               apiUrl="api/v1/product/bulk-upload/"
               payloadKey="file"
+              additionalData={{
+                tenant_id: Number(reduxProjectId),
+              }}
               onSuccess={() => {
                 toast.success("Import is running on Background");
               }}
@@ -486,10 +491,10 @@ export default function Product() {
               }}
               iconSize={22}
               className="
-                text-slate-600
-                hover:text-indigo-600
-                transition-colors
-              "
+    text-slate-600
+    hover:text-indigo-600
+    transition-colors
+  "
             />
           </div>,
           headerActionsContainer,

@@ -5,7 +5,8 @@ import { api } from "../../api/base";
 
 interface ExcelUploadButtonProps {
   apiUrl: string;
-  payloadKey?: string; // The form-data key the backend expects (usually 'file')
+  payloadKey?: string;
+  additionalData?: Record<string, string | number>;
   className?: string;
   iconSize?: number;
   onSuccess?: (data: any) => void;
@@ -15,48 +16,67 @@ interface ExcelUploadButtonProps {
 export const ExcelUploadButton: React.FC<ExcelUploadButtonProps> = ({
   apiUrl,
   payloadKey = "file",
+  additionalData,
   className = "",
   iconSize = 20,
   onSuccess,
   onError,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  console.log("additional data", additionalData);
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      // Multipart/form-data is required for uploading physical files
       const formData = new FormData();
+
+      // Add Excel file
       formData.append(payloadKey, file);
+
+      // Add additional form-data fields
+      Object.entries(additionalData ?? {}).forEach(([key, value]) => {
+        formData.append(key, String(value));
+      });
+
+      console.log("form data", formData);
+      console.log("tenant_id being sent:", formData.get("tenant_id"));
+      console.log("file being sent:", formData.get("file"));
 
       const response = await api.post(apiUrl, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
+
       return response.data;
     },
+
     onSuccess: (data) => {
       if (onSuccess) onSuccess(data);
-      // Reset the input value so the same file can be uploaded again if needed
-      if (fileInputRef.current) fileInputRef.current.value = "";
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     },
+
     onError: (error) => {
       console.error("Failed to upload Excel file:", error);
+
       if (onError) onError(error);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     },
   });
 
   const handleButtonClick = () => {
-    // Programmatically trigger the hidden file input
     fileInputRef.current?.click();
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+
     if (!file) return;
 
-    // Optional: Front-end validation to ensure it's an Excel file
     const isExcel =
       file.type ===
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
@@ -64,17 +84,19 @@ export const ExcelUploadButton: React.FC<ExcelUploadButtonProps> = ({
 
     if (!isExcel) {
       alert("Please upload a valid Excel file (.xlsx or .xls)");
-      if (fileInputRef.current) fileInputRef.current.value = "";
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
       return;
     }
 
-    // Trigger the TanStack mutation
     uploadMutation.mutate(file);
   };
 
   return (
     <>
-      {/* Hidden native file input */}
       <input
         type="file"
         ref={fileInputRef}
@@ -83,7 +105,6 @@ export const ExcelUploadButton: React.FC<ExcelUploadButtonProps> = ({
         style={{ display: "none" }}
       />
 
-      {/* Styled action button */}
       <button
         type="button"
         onClick={handleButtonClick}
