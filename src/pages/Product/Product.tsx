@@ -689,14 +689,6 @@ export default function Product() {
           products.map((product) => {
             const analytics = (product as any)?.analytics;
 
-            /*
-             * TEMPORARY FALLBACKS
-             *
-             * Keep these inline so
-             * "HARD CODE" can still
-             * be searched easily.
-             */
-
             const productUrl =
               (product as any)?.product_url ||
               (product as any)?.url ||
@@ -732,170 +724,170 @@ export default function Product() {
             return (
               <div
                 key={product.id}
-                className="
-                    bg-white
-                    border
-                    border-slate-200
-                    rounded-2xl
-                    overflow-hidden
-                    shadow-sm
-                    hover:shadow-md
-                    transition-shadow
-                  "
+                className=" 
+      bg-white 
+      border 
+      border-slate-200 
+      rounded-2xl 
+      overflow-hidden 
+      shadow-sm 
+      hover:shadow-md 
+      transition-shadow 
+    "
               >
                 <div
-                  className="
-                      flex
-                      items-center
-                      gap-6
-                      px-6
-                      py-6
-                    "
+                  className=" 
+        flex 
+        items-center 
+        gap-6 
+        px-6 
+        py-6 
+      "
                 >
-                  {/* ==================================
-                        PRODUCT IMAGE / ICON
-                    ================================== */}
+                  {/* ================================== 
+          PRODUCT IMAGE / ICON 
+      ================================== */}
 
                   <div
-                    className="
-                        flex-shrink-0
-                        w-20
-                        h-20
-                        rounded-2xl
-                        bg-slate-50
-                        flex
-                        items-center
-                        justify-center
-                        overflow-hidden
-                      "
+                    className=" 
+          flex-shrink-0 
+          w-20 
+          h-20 
+          rounded-2xl 
+          bg-slate-50 
+          flex 
+          items-center 
+          justify-center 
+          overflow-hidden 
+        "
                   >
                     {image ? (
                       <img
                         src={image}
                         alt={product.name || "Product"}
-                        className="
-                            w-full
-                            h-full
-                            object-contain
-                          "
+                        className=" 
+              w-full 
+              h-full 
+              object-contain 
+            "
                       />
                     ) : (
                       <Package
-                        className="
-                            w-9
-                            h-9
-                            text-slate-400
-                          "
+                        className=" 
+              w-9 
+              h-9 
+              text-slate-400 
+            "
                       />
                     )}
                   </div>
 
-                  {/* ==================================
-                        PRODUCT DETAILS
-                    ================================== */}
+                  {/* ================================== 
+          PRODUCT DETAILS 
+      ================================== */}
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <Link
                         to={`/admin/product/${product.id}`}
                         state={{
                           productIds,
                         }}
-                        className="
-                            text-xl
-                            font-semibold
-                            text-slate-900
-                            hover:text-cyan-600
-                            transition-colors
-                            truncate
-                          "
+                        title={product.name || ""}
+                        className=" 
+              text-xl 
+              font-semibold 
+              text-slate-900 
+              hover:text-cyan-600 
+              transition-colors 
+              truncate 
+              min-w-0
+            "
                       >
-                        {product.name || "HARD CODE"}
+                        {product.name || ""}
                       </Link>
 
                       {/* STATUS */}
 
                       {isAnalyzing ? (
                         <span
-                          className="
-                              flex-shrink-0
-                              inline-flex
-                              items-center
-                              gap-1.5
-                              px-3
-                              py-1
-                              rounded-full
-                              bg-blue-50
-                              border
-                              border-blue-200
-                              text-blue-700
-                              text-sm
-                              font-medium
-                            "
+                          className=" 
+                flex-shrink-0 
+                inline-flex 
+                items-center 
+                gap-1.5 
+                px-3 
+                py-1 
+                rounded-full 
+                bg-blue-50 
+                border 
+                border-blue-200 
+                text-blue-700 
+                text-sm 
+                font-medium 
+              "
                         >
                           <Loader2 className="w-4 h-4 animate-spin" />
-
-                          {currentAnalysis?.message || "Analyzing..."}
                         </span>
                       ) : currentAnalysis?.message === "Analysis completed" ? (
                         <span
-                          className="
-                              flex-shrink-0
-                              inline-flex
-                              items-center
-                              gap-1.5
-                              px-3
-                              py-1
-                              rounded-full
-                              bg-emerald-50
-                              border
-                              border-emerald-200
-                              text-emerald-700
-                              text-sm
-                              font-medium
-                            "
+                          className=" 
+                flex-shrink-0 
+                inline-flex 
+                items-center 
+                gap-1.5 
+                px-3 
+                py-1 
+                rounded-full 
+                bg-emerald-50 
+                border 
+                border-emerald-200 
+                text-emerald-700 
+                text-sm 
+                font-medium 
+              "
                         >
                           <CheckCircle2 className="w-4 h-4" />
                           Analysis completed
                         </span>
                       ) : hasAnalysis ? (
                         <span
-                          className="
-                              flex-shrink-0
-                              inline-flex
-                              items-center
-                              gap-1.5
-                              px-3
-                              py-1
-                              rounded-full
-                              bg-emerald-50
-                              border
-                              border-emerald-200
-                              text-emerald-700
-                              text-sm
-                              font-medium
-                            "
+                          className=" 
+                flex-shrink-0 
+                inline-flex 
+                items-center 
+                gap-1.5 
+                px-3 
+                py-1 
+                rounded-full 
+                bg-emerald-50 
+                border 
+                border-emerald-200 
+                text-emerald-700 
+                text-sm 
+                font-medium 
+              "
                         >
                           <CheckCircle2 className="w-4 h-4" />
                           Analyzed
                         </span>
                       ) : (
                         <span
-                          className="
-                              flex-shrink-0
-                              inline-flex
-                              items-center
-                              gap-1.5
-                              px-3
-                              py-1
-                              rounded-full
-                              bg-slate-50
-                              border
-                              border-slate-200
-                              text-slate-600
-                              text-sm
-                              font-medium
-                            "
+                          className=" 
+                flex-shrink-0 
+                inline-flex 
+                items-center 
+                gap-1.5 
+                px-3 
+                py-1 
+                rounded-full 
+                bg-slate-50 
+                border 
+                border-slate-200 
+                text-slate-600 
+                text-sm 
+                font-medium 
+              "
                         >
                           <CircleAlert className="w-4 h-4" />
                           Needs analysis
@@ -906,32 +898,32 @@ export default function Product() {
                     {/* SKU + PRODUCT PAGE */}
 
                     <div
-                      className="
-                          flex
-                          items-center
-                          gap-5
-                          mt-3
-                          text-[15px]
-                          text-slate-400
-                        "
+                      className=" 
+            flex 
+            items-center 
+            gap-5 
+            mt-3 
+            text-[15px] 
+            text-slate-400 
+          "
                     >
                       <span className="flex items-center gap-1.5">
                         <Tag className="w-4 h-4" />
-                        SKU: {product.sku || "HARD CODE"}
+                        SKU: {product.sku || ""}
                       </span>
 
-                      {productUrl !== "HARD CODE" ? (
+                      {productUrl !== "" ? (
                         <a
                           href={productUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="
-                              flex
-                              items-center
-                              gap-1.5
-                              hover:text-cyan-600
-                              transition-colors
-                            "
+                          className=" 
+                flex 
+                items-center 
+                gap-1.5 
+                hover:text-cyan-600 
+                transition-colors 
+              "
                         >
                           <Globe className="w-4 h-4" />
                           Product page
@@ -946,9 +938,9 @@ export default function Product() {
                     </div>
                   </div>
 
-                  {/* ==================================
-                        AI SCORES
-                    ================================== */}
+                  {/* ================================== 
+          AI SCORES 
+      ================================== */}
 
                   {hasAnalysis && (
                     <div className="flex items-center flex-shrink-0">
@@ -1018,17 +1010,17 @@ export default function Product() {
                     </div>
                   )}
 
-                  {/* ==================================
-                        ACTIONS
-                    ================================== */}
+                  {/* ================================== 
+          ACTIONS 
+      ================================== */}
 
                   <div
-                    className="
-                        flex
-                        items-center
-                        gap-3
-                        flex-shrink-0
-                      "
+                    className=" 
+          flex 
+          items-center 
+          gap-3 
+          flex-shrink-0 
+        "
                   >
                     {/* ANALYZE / RE-SCAN */}
 
@@ -1036,24 +1028,24 @@ export default function Product() {
                       type="button"
                       disabled={isAnalyzing}
                       onClick={() => handleAnalyze(product)}
-                      className="
-                          flex
-                          items-center
-                          gap-2
-                          px-5
-                          py-3
-                          rounded-xl
-                          bg-slate-100
-                          hover:bg-slate-200
-                          disabled:bg-slate-100
-                          disabled:text-slate-400
-                          text-slate-700
-                          font-semibold
-                          transition-colors
-                          cursor-pointer
-                          disabled:cursor-not-allowed
-                          whitespace-nowrap
-                        "
+                      className=" 
+            flex 
+            items-center 
+            gap-2 
+            px-5 
+            py-3 
+            rounded-xl 
+            bg-slate-100 
+            hover:bg-slate-200 
+            disabled:bg-slate-100 
+            disabled:text-slate-400 
+            text-slate-700 
+            font-semibold 
+            transition-colors 
+            cursor-pointer 
+            disabled:cursor-not-allowed 
+            whitespace-nowrap 
+          "
                     >
                       {isAnalyzing ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -1075,13 +1067,13 @@ export default function Product() {
                     <button
                       type="button"
                       onClick={() => handleEdit(product)}
-                      className="
-                          p-2
-                          text-slate-400
-                          hover:text-slate-700
-                          transition-colors
-                          cursor-pointer
-                        "
+                      className=" 
+            p-2 
+            text-slate-400 
+            hover:text-slate-700 
+            transition-colors 
+            cursor-pointer 
+          "
                       title="Edit"
                     >
                       <SquarePen className="w-5 h-5" />
@@ -1092,13 +1084,13 @@ export default function Product() {
                     <button
                       type="button"
                       onClick={() => handleDelete(product.id)}
-                      className="
-                          p-2
-                          text-slate-400
-                          hover:text-red-500
-                          transition-colors
-                          cursor-pointer
-                        "
+                      className=" 
+            p-2 
+            text-slate-400 
+            hover:text-red-500 
+            transition-colors 
+            cursor-pointer 
+          "
                       title="Delete"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -1111,12 +1103,12 @@ export default function Product() {
                       state={{
                         productIds,
                       }}
-                      className="
-                          p-2
-                          text-slate-300
-                          hover:text-slate-600
-                          transition-colors
-                        "
+                      className=" 
+            p-2 
+            text-slate-300 
+            hover:text-slate-600 
+            transition-colors 
+          "
                       title="View"
                     >
                       <ChevronRight className="w-6 h-6" />
