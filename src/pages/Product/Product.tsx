@@ -45,6 +45,7 @@ import { AppMultiSelect } from "../../components/Common/AppMultiSelect";
 
 import { ExcelDownloadButton } from "../../components/Common/ExcelDownload";
 import { ExcelUploadButton } from "../../components/Common/ExcelUpload";
+import { tokenStorage } from "../../helpers/auth";
 
 import {
   productService,
@@ -213,6 +214,11 @@ export default function Product() {
 
     toast.error(getErrorMessage(error));
   };
+
+  const user = tokenStorage.getUser();
+  const isAdmin = user?.is_super_admin;
+
+  console.log("user",user, isAdmin)
 
   const handleMutationSuccess = (message: string, close?: () => void) => {
     toast.success(message);
@@ -990,6 +996,20 @@ export default function Product() {
                           Overall
                         </div>
                       </div>
+
+                      {/* TOKENS - ADMIN ONLY */}
+
+                      {isAdmin && (
+                        <div className="w-32 text-center">
+                          <div className="text-[24px] leading-none font-bold text-purple-600">
+                            {analytics?.total_tokens ?? 0}
+                          </div>
+
+                          <div className="text-sm text-slate-400 mt-2">
+                            Tokens
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
