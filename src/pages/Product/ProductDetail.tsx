@@ -25,6 +25,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProdoctGenerateContent from "./ProductGenerateContent";
 import ActualContentTabContent from "./ProductActualContentTab";
 import RecommendationsTabContent from "./ProductRecommandation";
+import { tokenStorage } from "../../helpers/auth";
 
 export default function ProductDashboard() {
   const { id } = useParams();
@@ -33,6 +34,12 @@ export default function ProductDashboard() {
   const activeTab = searchParams.get("tab") || "visibility";
 
   const navigate = useNavigate();
+
+  // ---------------------------------------------------------------
+  // User / Admin Check
+  // ---------------------------------------------------------------
+  const user = tokenStorage.getUser();
+  const isAdmin = user?.is_super_admin === true;
 
   // --- Product Queue Navigation Logic ---
   const productIds: number[] = location.state?.productIds ?? [];
@@ -67,15 +74,28 @@ export default function ProductDashboard() {
   // Keep a local copy of productInfo so the header NEVER flashes or unmounts during transitions
   const [cachedProductInfo, setCachedProductInfo] = useState<any>(null);
 
+  // ---------------------------------------------------------------
+  // Token cache
+  // Only populated / used for admin users
+  // ---------------------------------------------------------------
+  const [cachedToken, setCachedToken] = useState<any>(null);
+
   // Safely extract our dynamic backend payload structures
   // @ts-ignore
-  const { productInfo, tabData } = dashboardData || {};
+  const { productInfo, tabData, token } = dashboardData || {};
 
   useEffect(() => {
     if (productInfo) {
       setCachedProductInfo(productInfo);
     }
   }, [productInfo]);
+
+  // Cache token data only for super admins
+  useEffect(() => {
+    if (isAdmin && token) {
+      setCachedToken(token);
+    }
+  }, [token, isAdmin]);
 
   const tabs = [
     { id: "visibility", label: "Visibility" },
@@ -115,8 +135,12 @@ export default function ProductDashboard() {
   // Use the cached product info if the current one is resolving in the background
   const displayProductInfo = cachedProductInfo || productInfo;
 
+  // Use cached token only for admin users
+  const displayToken = isAdmin ? cachedToken || token : null;
+
   // Helper to safely format the raw score from 0-100 down to 0-10 scale
   const rawVisibilityScore = displayProductInfo?.globalScores?.visibilityScore;
+
   const formattedVisibilityScore =
     rawVisibilityScore !== undefined && rawVisibilityScore !== null
       ? typeof rawVisibilityScore === "number"
@@ -172,6 +196,7 @@ export default function ProductDashboard() {
           </div>
         )}
       </div>
+
       <div className="min-h-screen bg-slate-50 text-slate-800 font-sans py-3">
         {/* 1. STATIC HEADER BANNER (Perfect state locking) */}
         <header className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-6">
@@ -181,10 +206,12 @@ export default function ProductDashboard() {
                 <h1 className="text-xl font-bold text-slate-900">
                   {displayProductInfo?.title}
                 </h1>
+
                 <p className="text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1 mt-0.5">
                   <span>
                     <strong>SKU:</strong> {displayProductInfo?.sku}
                   </span>
+
                   <span>
                     <strong>MPN:</strong> {displayProductInfo?.mpn}
                   </span>
@@ -200,10 +227,12 @@ export default function ProductDashboard() {
                 <span className="text-xs font-semibold uppercase tracking-wider text-blue-200">
                   AI Visibility Score
                 </span>
+
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-5xl font-black">
                     {formattedVisibilityScore}
                   </span>
+
                   <span className="text-sm opacity-80">out of 10</span>
                 </div>
               </div>
@@ -213,6 +242,7 @@ export default function ProductDashboard() {
                   <span className="text-xs text-blue-200 block">
                     Mention Rate
                   </span>
+
                   <span className="text-2xl font-bold">
                     {displayProductInfo?.globalScores?.mentionRate}
                   </span>
@@ -222,6 +252,7 @@ export default function ProductDashboard() {
                   <span className="text-xs text-blue-200 block">
                     Reviews Count
                   </span>
+
                   <span className="text-2xl font-bold">
                     {displayProductInfo?.globalScores?.reviewsCount}
                   </span>
@@ -240,6 +271,7 @@ export default function ProductDashboard() {
                   <span className="text-xs text-slate-500 font-medium">
                     {engine.name}
                   </span>
+
                   <span className="text-lg font-bold text-slate-800 mt-0.5">
                     {engine.score}%
                   </span>
@@ -247,6 +279,116 @@ export default function ProductDashboard() {
               ))}
             </div>
           </div>
+
+          {/* -----------------------------------------------------------
+              ADMIN ONLY - LLM TOKEN USAGE
+              ----------------------------------------------------------- */}
+          {isAdmin && displayToken && (
+            <div className="mt-5 border-t border-slate-100 pt-5">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">
+                    LLM Token Usage
+                  </h3>
+
+                  <p className="text-xs text-slate-400">
+                    Token consumption for this product
+                  </p>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-xs text-slate-500 block">
+                    Total Tokens
+                  </span>
+
+                  <span className="text-lg font-bold text-slate-900">
+                    {displayToken.totalTokens?.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Global Token Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                  <span className="text-xs text-slate-500 block">
+                    Input Tokens
+                  </span>
+
+                  <span className="text-lg font-bold text-slate-800">
+                    {displayToken.inputTokens?.toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                  <span className="text-xs text-slate-500 block">
+                    Output Tokens
+                  </span>
+
+                  <span className="text-lg font-bold text-slate-800">
+                    {displayToken.outputTokens?.toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                  <span className="text-xs text-slate-500 block">
+                    Total Tokens
+                  </span>
+
+                  <span className="text-lg font-bold text-slate-800">
+                    {displayToken.totalTokens?.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* LLM-wise Token Breakdown */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {Object.entries(displayToken.byModel || {}).map(
+                  ([model, usage]: [string, any]) => (
+                    <div
+                      key={model}
+                      className="bg-white border border-slate-200 rounded-lg p-4"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-bold text-slate-800">
+                          {model.replace("LLMMODELS.", "")}
+                        </span>
+
+                        <span className="text-xs font-semibold text-blue-600">
+                          {usage.totalTokens?.toLocaleString()} total
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Input</span>
+
+                          <span className="font-semibold text-slate-700">
+                            {usage.inputTokens?.toLocaleString()}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Output</span>
+
+                          <span className="font-semibold text-slate-700">
+                            {usage.outputTokens?.toLocaleString()}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between text-xs border-t border-slate-100 pt-2">
+                          <span className="text-slate-500">Total</span>
+
+                          <span className="font-bold text-slate-900">
+                            {usage.totalTokens?.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+          )}
         </header>
 
         {/* 2. ROUTER-DRIVEN TAB NAVIGATION */}
@@ -271,21 +413,27 @@ export default function ProductDashboard() {
           {activeTab === "visibility" && (
             <VisibilityTabContent data={tabData} isLoading={isLoading} />
           )}
+
           {activeTab === "competitor" && (
             <CompetitorTabContent data={tabData} isLoading={isLoading} />
           )}
+
           {activeTab === "citation" && (
             <CitationTabContent data={tabData} isLoading={isLoading} />
           )}
+
           {activeTab === "recommendations" && (
             <RecommendationsTabContent data={tabData} isLoading={isLoading} />
           )}
+
           {activeTab === "tips" && (
             <TipsTabContent data={tabData} isLoading={isLoading} />
           )}
+
           {activeTab === "generate_content" && (
             <ProdoctGenerateContent productInfo={displayProductInfo} />
           )}
+
           {activeTab === "actual_content" && (
             <ActualContentTabContent
               data={tabData?.actual_content}

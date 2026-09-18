@@ -288,7 +288,10 @@ export default function ProjectDashboard() {
         return (
           <div
             className="flex items-center gap-3 cursor-pointer"
-            onClick={() => dispatch(setGlobalProjectId(row.id))}
+            onClick={() => {
+              dispatch(setGlobalProjectId(row.id));
+              navigate(`/admin/product`);
+            }}
           >
             <div className="flex flex-col">
               <span className="font-semibold text-slate-900 flex items-center gap-1.5">
