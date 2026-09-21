@@ -111,8 +111,17 @@ export default function RecommendationsTabContent({
   const [expandedCriterion, setExpandedCriterion] =
     useState<CriterionKey | null>(null);
 
-  const { id: productId } = useParams<{
-    id: string;
+  /*
+   * FIX:
+   *
+   * Your route should be:
+   *
+   * /product/:productID
+   *
+   * Therefore we must read "productID", not "id".
+   */
+  const { productID } = useParams<{
+    productID: string;
   }>();
 
   /*
@@ -440,33 +449,32 @@ export default function RecommendationsTabContent({
    * ============================================================
    * ONE API / ONE MUTATION
    * ============================================================
-   *
-   * First call:
-   *
-   * versions: []
-   *
-   * API response:
-   *
-   * single_recommandation: {
-   *   title: {
-   *     value: ["Version 1"]
-   *   }
-   * }
-   *
-   * Second call:
-   *
-   * versions: ["Version 1"]
-   *
-   * API response:
-   *
-   * value: ["Version 1", "Version 2"]
    */
+
   const generateMutation = useMutation({
     mutationFn: async (criterion: CriterionKey) => {
+      /*
+       * FIX:
+       *
+       * Make sure the URL contains the product ID.
+       */
+      if (!productID) {
+        throw new Error("Product ID is missing from the URL");
+      }
+
       const existingVersions = getGeneratedVersions(criterion);
 
       const response = await api.post<GenerateResponse>(GENERATE_ENDPOINT, {
-        product_id: Number(productId),
+        /*
+         * FIX:
+         *
+         * Send productID from the URL as product_id.
+         *
+         * Number() is kept because your Product ID
+         * is expected to be an integer.
+         */
+        product_id: Number(productID),
+
         criterion,
 
         recommendations: getAllModelRecommendations(criterion),
@@ -513,7 +521,11 @@ export default function RecommendationsTabContent({
         return;
       }
 
-      toast.error("Failed to generate recommendation");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate recommendation",
+      );
     },
   });
 
@@ -575,7 +587,7 @@ export default function RecommendationsTabContent({
               stroke="currentColor"
               strokeWidth="2"
             >
-              <path d="M9 18h6M10 22h4M8 14a6 6 0 1110-4c0 2-1 3-2 4-1 1-2 3-2 3H9c0-1-1-2-1-3-1-1-2-2-2-4" />
+              <path d="M9 18h6M10 22h4M8 14a6 6 0 1110-4c0 2-1 3-2 4-1 1-2 3-2 3H9c0-1-1-2-1-3-1-1-2-3-2-4" />
             </svg>
 
             <p className="text-sm text-slate-500 leading-relaxed">{item.why}</p>
@@ -772,13 +784,6 @@ export default function RecommendationsTabContent({
 
           const canGenerate = generatedVersions.length < MAX_GENERATED_VERSIONS;
 
-          /*
-           * If Version 1 already came from
-           * the API, no API call happens here.
-           *
-           * The user must explicitly click
-           * the button to generate Version 2.
-           */
           const nextVersion = generatedVersions.length + 1;
 
           return (
