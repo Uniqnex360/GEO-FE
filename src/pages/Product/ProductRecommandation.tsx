@@ -1,6 +1,11 @@
-import { useState } from "react";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
+import { API_V1, api } from "../../api/base";
 
-// Clean text-free loading circle
 function TabSpinnerFallback() {
   return (
     <div className="w-full min-h-[350px] bg-white border border-slate-200 rounded-xl shadow-sm flex items-center justify-center">
@@ -8,6 +13,10 @@ function TabSpinnerFallback() {
     </div>
   );
 }
+
+const MAX_GENERATED_VERSIONS = 3;
+
+const GENERATE_ENDPOINT = `${API_V1}chat/v2/generate-single-recommandation/`;
 
 interface RecommendationItem {
   why?: string;
@@ -50,18 +59,117 @@ interface RecommendationsActions {
   };
 }
 
+/*
+ * NEW
+ */
+type CriterionKey =
+  | "title"
+  | "description"
+  | "features"
+  | "attributes"
+  | "assets"
+  | "pricing";
+
+interface SingleRecommendationItem {
+  value?: string[];
+  token_usage?: Record<string, unknown>;
+}
+
+type SingleRecommendation = Partial<
+  Record<CriterionKey, SingleRecommendationItem>
+>;
+
+interface GenerateResponse {
+  single_recommandation?: SingleRecommendation;
+}
+
 interface RecommendationsProps {
   data: {
     actions?: RecommendationsActions;
+
+    /*
+     * NEW
+     *
+     * Existing API response can already contain:
+     *
+     * single_recommandation: {
+     *   title: {
+     *     value: ["Generated version 1"]
+     *   }
+     * }
+     */
+    single_recommandation?: SingleRecommendation;
   };
+
   isLoading: boolean;
 }
 
-export default function RecommendationsTabContent({ data, isLoading }: RecommendationsProps) {
-  const [expandedCriterion, setExpandedCriterion] = useState<string | null>(
-    null,
-  );
+export default function RecommendationsTabContent({
+  data,
+  isLoading,
+}: RecommendationsProps) {
+  const [expandedCriterion, setExpandedCriterion] =
+    useState<CriterionKey | null>(null);
 
+  const { id: productId } = useParams<{
+    id: string;
+  }>();
+
+  /*
+   * ============================================================
+   * NEW: generated recommendation state
+   * ============================================================
+   *
+   * This is intentionally separate from actions.models.
+   */
+  const [singleRecommandation, setSingleRecommandation] =
+    useState<SingleRecommendation>(data?.single_recommandation || {});
+
+  /*
+   * NEW
+   *
+   * Keep generated values registered in react-hook-form.
+   */
+  const { register, setValue } = useForm<{
+    single_recommandation: Partial<Record<CriterionKey, string[]>>;
+  }>();
+
+  /*
+   * NEW
+   *
+   * Populate Version 1 from the API response.
+   *
+   * Important:
+   * We are NOT generating anything here.
+   *
+   * If API already returned:
+   *
+   * single_recommandation.title.value = [
+   *   "some generated answer"
+   * ]
+   *
+   * that becomes Version 1 automatically.
+   */
+  useEffect(() => {
+    if (!data?.single_recommandation) {
+      return;
+    }
+
+    setSingleRecommandation(data.single_recommandation);
+
+    Object.entries(data.single_recommandation).forEach(([criterion, item]) => {
+      setValue(
+        `single_recommandation.${criterion as CriterionKey}`,
+        item?.value || [],
+      );
+    });
+  }, [data?.single_recommandation, setValue]);
+
+  /*
+   * ============================================================
+   * Existing loading behavior
+   * ============================================================
+   */
   if (isLoading) return <TabSpinnerFallback />;
 
   const actions = data?.actions;
@@ -79,8 +187,6 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
     "assets",
     "pricing",
   ] as const;
-
-  type CriterionKey = (typeof criterionKeys)[number];
 
   const criterionLabels: Record<CriterionKey, string> = {
     title: "Title",
@@ -112,9 +218,17 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
   const getModelName = (model: string) => {
     const value = model?.replace("LLMModels.", "").toUpperCase();
 
-    if (value === "GPT" || value === "CHATGPT") return "GPT";
-    if (value === "GEMINI") return "GEMINI";
-    if (value === "CLAUDE") return "CLAUDE";
+    if (value === "GPT" || value === "CHATGPT") {
+      return "GPT";
+    }
+
+    if (value === "GEMINI") {
+      return "GEMINI";
+    }
+
+    if (value === "CLAUDE") {
+      return "CLAUDE";
+    }
 
     return value;
   };
@@ -230,7 +344,9 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
   const getAverageImpact = (modelName: string, criterion: CriterionKey) => {
     const section = getSection(modelName, criterion);
 
-    if (!section?.recommendations?.length) return 0;
+    if (!section?.recommendations?.length) {
+      return 0;
+    }
 
     const impacts = section.recommendations
       .map((item) => Number(item.impact || 0))
@@ -273,12 +389,18 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 70) return "text-emerald-500";
+    if (score >= 70) {
+      return "text-emerald-500";
+    }
+
     return "text-orange-500";
   };
 
   const getScoreBarColor = (score: number) => {
-    if (score >= 70) return "bg-emerald-500";
+    if (score >= 70) {
+      return "bg-emerald-500";
+    }
+
     return "bg-orange-500";
   };
 
@@ -288,10 +410,138 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
     return Number.isInteger(impact) ? String(impact) : impact.toFixed(1);
   };
 
+  /*
+   * ============================================================
+   * NEW: Generated versions helpers
+   * ============================================================
+   */
+
+  const getGeneratedVersions = (criterion: CriterionKey) => {
+    return singleRecommandation?.[criterion]?.value || [];
+  };
+
+  /*
+   * Get ALL recommendations for the selected
+   * criterion from the 3 existing models.
+   *
+   * actions.models is NOT changed.
+   */
+  const getAllModelRecommendations = (criterion: CriterionKey) => {
+    return {
+      chatgpt: getSection("GPT", criterion)?.recommendations || [],
+
+      gemini: getSection("GEMINI", criterion)?.recommendations || [],
+
+      claude: getSection("CLAUDE", criterion)?.recommendations || [],
+    };
+  };
+
+  /*
+   * ============================================================
+   * ONE API / ONE MUTATION
+   * ============================================================
+   *
+   * First call:
+   *
+   * versions: []
+   *
+   * API response:
+   *
+   * single_recommandation: {
+   *   title: {
+   *     value: ["Version 1"]
+   *   }
+   * }
+   *
+   * Second call:
+   *
+   * versions: ["Version 1"]
+   *
+   * API response:
+   *
+   * value: ["Version 1", "Version 2"]
+   */
+  const generateMutation = useMutation({
+    mutationFn: async (criterion: CriterionKey) => {
+      const existingVersions = getGeneratedVersions(criterion);
+
+      const response = await api.post<GenerateResponse>(GENERATE_ENDPOINT, {
+        product_id: Number(productId),
+        criterion,
+
+        recommendations: getAllModelRecommendations(criterion),
+
+        versions: existingVersions,
+      });
+
+      return response.data;
+    },
+
+    onSuccess: (response, criterion) => {
+      const apiVersions =
+        response?.single_recommandation?.[criterion]?.value || [];
+
+      /*
+       * Keep only the allowed number of versions.
+       */
+      const versions = apiVersions.slice(0, MAX_GENERATED_VERSIONS);
+
+      setSingleRecommandation((previous) => ({
+        ...previous,
+
+        [criterion]: {
+          ...previous?.[criterion],
+
+          ...response?.single_recommandation?.[criterion],
+
+          value: versions,
+        },
+      }));
+
+      setValue(`single_recommandation.${criterion}`, versions);
+    },
+
+    onError: (error) => {
+      if (axios.isAxiosError(error)) {
+        const message =
+          error.response?.data?.detail ||
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to generate recommendation";
+
+        toast.error(message);
+        return;
+      }
+
+      toast.error("Failed to generate recommendation");
+    },
+  });
+
+  /*
+   * ============================================================
+   * NEW: Generate next version
+   * ============================================================
+   */
+  const handleGenerate = (criterion: CriterionKey) => {
+    const versions = getGeneratedVersions(criterion);
+
+    /*
+     * Never allow more than MAX_GENERATED_VERSIONS.
+     */
+    if (versions.length >= MAX_GENERATED_VERSIONS) {
+      return;
+    }
+
+    /*
+     * Same API for Version 1, Version 2,
+     * and Version 3.
+     */
+    generateMutation.mutate(criterion);
+  };
+
   const renderRecommendation = (item: RecommendationItem, index: number) => {
     return (
       <div key={index} className="border-l-2 border-orange-200 pl-4">
-        {/* Impact + Effort */}
         <div className="flex items-center gap-2 mb-3">
           {item.impact !== undefined && (
             <>
@@ -310,14 +560,12 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
           )}
         </div>
 
-        {/* Recommendation */}
         {item.recommendation && (
           <h4 className="text-base font-bold text-slate-900 leading-snug">
             {item.recommendation}
           </h4>
         )}
 
-        {/* Why */}
         {item.why && (
           <div className="flex items-start gap-2 mt-3">
             <svg
@@ -327,14 +575,13 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
               stroke="currentColor"
               strokeWidth="2"
             >
-              <path d="M9 18h6M10 22h4M8 14a6 6 0 1110-4c0 2-1 3-2 4-1 1-2 2-2 3H9c0-1-1-2-1-3-1-1-2-2-2-4" />
+              <path d="M9 18h6M10 22h4M8 14a6 6 0 1110-4c0 2-1 3-2 4-1 1-2 3-2 3H9c0-1-1-2-1-3-1-1-2-2-2-4" />
             </svg>
 
             <p className="text-sm text-slate-500 leading-relaxed">{item.why}</p>
           </div>
         )}
 
-        {/* Action */}
         {item.action && (
           <div className="flex items-start gap-2 mt-3">
             <svg
@@ -371,9 +618,13 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
     criterion: CriterionKey,
   ) => {
     const section = getSection(modelName, criterion);
+
     const recommendations = section?.recommendations || [];
+
     const colors = getModelColors(modelName);
+
     const score = getCriterionScore(modelName, criterion);
+
     const averageImpact = getAverageImpact(modelName, criterion);
 
     return (
@@ -381,7 +632,6 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
         key={modelName}
         className="bg-white border border-slate-200 rounded-2xl p-6"
       >
-        {/* Model Header */}
         <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
           <div className={colors.text}>{getModelIcon(modelName)}</div>
 
@@ -396,7 +646,6 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
           </span>
         </div>
 
-        {/* Score */}
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-slate-400">Score</span>
@@ -420,7 +669,6 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
           </div>
         </div>
 
-        {/* Recommendations */}
         <div className="space-y-6 mt-6">
           {recommendations.map((item, index) =>
             renderRecommendation(item, index),
@@ -444,7 +692,6 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
         key={modelName}
         className="flex flex-col items-center justify-center"
       >
-        {/* Recommendation count */}
         <div className="flex items-center gap-1.5">
           <span className="text-lg font-bold text-slate-900">{count}</span>
 
@@ -453,7 +700,6 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
           </span>
         </div>
 
-        {/* Score */}
         <div className="flex items-center gap-2 mt-2">
           <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
             <div
@@ -469,7 +715,6 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
           </span>
         </div>
 
-        {/* Average impact */}
         <span className="text-xs text-slate-400 mt-2">
           avg impact {formatImpact(averageImpact)}
         </span>
@@ -485,15 +730,12 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
 
   return (
     <div className="space-y-4">
-      {/* Description */}
       <p className="text-sm text-slate-500 px-1">
         Recommendation statistics by content criteria. Click any row to see the
         detailed recommendations for each LLM engine.
       </p>
 
-      {/* Main Table */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-        {/* Table Header */}
         <div className="grid grid-cols-[minmax(280px,1.8fr)_1fr_1fr_1fr_120px] bg-slate-50/70 border-b border-slate-200 px-6 py-4">
           <div className="text-xs font-bold text-slate-400 uppercase">
             Criteria
@@ -519,7 +761,6 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
           </div>
         </div>
 
-        {/* Criteria Rows */}
         {criterionKeys.map((criterion) => {
           const totalCount = getTotalRecommendationCount(criterion);
 
@@ -527,20 +768,33 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
 
           const isExpanded = expandedCriterion === criterion;
 
+          const generatedVersions = getGeneratedVersions(criterion);
+
+          const canGenerate = generatedVersions.length < MAX_GENERATED_VERSIONS;
+
+          /*
+           * If Version 1 already came from
+           * the API, no API call happens here.
+           *
+           * The user must explicitly click
+           * the button to generate Version 2.
+           */
+          const nextVersion = generatedVersions.length + 1;
+
           return (
             <div key={criterion}>
-              {/* Row */}
               <div
                 onClick={() => handleCriterionClick(criterion)}
                 className={`
-                  grid grid-cols-[minmax(280px,1.8fr)_1fr_1fr_1fr_120px]
-                  items-center px-6 py-6 cursor-pointer
-                  transition-colors
-                  ${isExpanded ? "bg-slate-50/60" : "hover:bg-slate-50/60"}
-                  ${criterion !== "pricing" ? "border-b border-slate-100" : ""}
-                `}
+                    grid grid-cols-[minmax(280px,1.8fr)_1fr_1fr_1fr_120px]
+                    items-center px-6 py-6 cursor-pointer
+                    transition-colors
+                    ${isExpanded ? "bg-slate-50/60" : "hover:bg-slate-50/60"}
+                    ${
+                      criterion !== "pricing" ? "border-b border-slate-100" : ""
+                    }
+                  `}
               >
-                {/* Criterion */}
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
                     <span className="text-orange-500 font-bold text-sm">
@@ -561,16 +815,12 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
                   </div>
                 </div>
 
-                {/* GPT */}
                 {renderModelSummary("GPT", criterion)}
 
-                {/* Gemini */}
                 {renderModelSummary("GEMINI", criterion)}
 
-                {/* Claude */}
                 {renderModelSummary("CLAUDE", criterion)}
 
-                {/* Overall Score */}
                 <div className="flex flex-col items-end">
                   <div className="flex items-center gap-3">
                     <span
@@ -611,9 +861,101 @@ export default function RecommendationsTabContent({ data, isLoading }: Recommend
                 </div>
               </div>
 
-              {/* Expanded Criterion */}
               {isExpanded && (
                 <div className="bg-slate-50/70 border-b border-slate-200 p-6">
+                  {/* =====================================================
+                        NEW: GENERATE AREA
+                        ===================================================== */}
+
+                  <div
+                    onClick={(event) => event.stopPropagation()}
+                    className="bg-white border border-slate-200 rounded-2xl p-5 mb-6"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">
+                          Generate
+                        </h3>
+
+                        <p className="text-sm text-slate-500 mt-1">
+                          {generatedVersions.length === 0
+                            ? "Generate a recommendation using ChatGPT, Gemini and Claude."
+                            : `Version ${generatedVersions.length} is available. Generate another version`}
+                        </p>
+                      </div>
+
+                      {canGenerate && (
+                        <button
+                          type="button"
+                          onClick={() => handleGenerate(criterion)}
+                          disabled={generateMutation.isPending}
+                          className="shrink-0 px-5 py-2.5 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {generateMutation.isPending
+                            ? "Generating..."
+                            : generatedVersions.length === 0
+                              ? "Generate"
+                              : `Generate Version ${nextVersion}`}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* =====================================================
+                        NEW: GENERATED VERSIONS
+                        ===================================================== */}
+
+                  {generatedVersions.length > 0 && (
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
+                      <div className="flex items-center justify-between mb-5">
+                        <div>
+                          <h3 className="text-base font-bold text-slate-900">
+                            Generated Versions
+                          </h3>
+
+                          <p className="text-xs text-slate-400 mt-1">
+                            {generatedVersions.length} /{" "}
+                            {MAX_GENERATED_VERSIONS} versions generated
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        {generatedVersions.map((version, index) => (
+                          <div
+                            key={`${criterion}-${index}`}
+                            className="border border-slate-200 rounded-xl p-4"
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-xs font-bold text-slate-400 uppercase">
+                                Version {index + 1}
+                              </span>
+
+                              {index === generatedVersions.length - 1 && (
+                                <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                                  Latest
+                                </span>
+                              )}
+                            </div>
+
+                            <textarea
+                              {...register(
+                                `single_recommandation.${criterion}.${index}`,
+                              )}
+                              defaultValue={version}
+                              rows={4}
+                              className="w-full border border-slate-200 rounded-lg p-3 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-slate-200"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* =====================================================
+                        EXISTING MODEL UI - UNCHANGED
+                        ===================================================== */}
+
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {renderModelExpandedColumn("GPT", criterion)}
 
