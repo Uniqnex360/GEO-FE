@@ -59,9 +59,6 @@ interface RecommendationsActions {
   };
 }
 
-/*
- * NEW
- */
 type CriterionKey =
   | "title"
   | "description"
@@ -86,21 +83,8 @@ interface GenerateResponse {
 interface RecommendationsProps {
   data: {
     actions?: RecommendationsActions;
-
-    /*
-     * NEW
-     *
-     * Existing API response can already contain:
-     *
-     * single_recommandation: {
-     *   title: {
-     *     value: ["Generated version 1"]
-     *   }
-     * }
-     */
     single_recommandation?: SingleRecommendation;
   };
-
   isLoading: boolean;
 }
 
@@ -112,52 +96,28 @@ export default function RecommendationsTabContent({
     useState<CriterionKey | null>(null);
 
   /*
-   * FIX:
-   *
-   * Your route should be:
-   *
+   * URL:
    * /product/:productID
-   *
-   * Therefore we must read "productID", not "id".
    */
   const { productID } = useParams<{
     productID: string;
   }>();
 
   /*
-   * ============================================================
-   * NEW: generated recommendation state
-   * ============================================================
-   *
-   * This is intentionally separate from actions.models.
+   * Generated recommendation state
    */
   const [singleRecommandation, setSingleRecommandation] =
     useState<SingleRecommendation>(data?.single_recommandation || {});
 
   /*
-   * NEW
-   *
-   * Keep generated values registered in react-hook-form.
+   * React Hook Form
    */
   const { register, setValue } = useForm<{
     single_recommandation: Partial<Record<CriterionKey, string[]>>;
   }>();
 
   /*
-   * NEW
-   *
-   * Populate Version 1 from the API response.
-   *
-   * Important:
-   * We are NOT generating anything here.
-   *
-   * If API already returned:
-   *
-   * single_recommandation.title.value = [
-   *   "some generated answer"
-   * ]
-   *
-   * that becomes Version 1 automatically.
+   * Sync generated recommendations from API
    */
   useEffect(() => {
     if (!data?.single_recommandation) {
@@ -176,16 +136,148 @@ export default function RecommendationsTabContent({
 
   /*
    * ============================================================
-   * Existing loading behavior
+   * HELPERS USED BY useMutation
    * ============================================================
    */
-  if (isLoading) return <TabSpinnerFallback />;
+
+  const getGeneratedVersions = (criterion: CriterionKey) => {
+    return singleRecommandation?.[criterion]?.value || [];
+  };
+
+  /*
+   * Get recommendations from all 3 existing models.
+   *
+   * This does NOT modify actions.models.
+   */
+  const getAllModelRecommendations = (criterion: CriterionKey) => {
+    const models = data?.actions?.models || [];
+
+    const getModelName = (model: string) => {
+      const value = model?.replace("LLMModels.", "").toUpperCase();
+
+      if (value === "GPT" || value === "CHATGPT") {
+        return "GPT";
+      }
+
+      if (value === "GEMINI") {
+        return "GEMINI";
+      }
+
+      if (value === "CLAUDE") {
+        return "CLAUDE";
+      }
+
+      return value;
+    };
+
+    const getModel = (modelName: string) => {
+      return models.find((model) => getModelName(model.model) === modelName);
+    };
+
+    return {
+      chatgpt: getModel("GPT")?.[criterion]?.recommendations || [],
+
+      gemini: getModel("GEMINI")?.[criterion]?.recommendations || [],
+
+      claude: getModel("CLAUDE")?.[criterion]?.recommendations || [],
+    };
+  };
+
+  /*
+   * ============================================================
+   * ONE MUTATION
+   *
+   * IMPORTANT:
+   * This MUST be before any conditional return.
+   * ============================================================
+   */
+
+  const generateMutation = useMutation({
+    mutationFn: async (criterion: CriterionKey) => {
+      if (!productID) {
+        throw new Error("Product ID is missing from the URL");
+      }
+
+      const existingVersions = getGeneratedVersions(criterion);
+
+      const response = await api.post<GenerateResponse>(GENERATE_ENDPOINT, {
+        product_id: Number(productID),
+
+        criterion,
+
+        recommendations: getAllModelRecommendations(criterion),
+
+        versions: existingVersions,
+      });
+
+      return response.data;
+    },
+
+    onSuccess: (response, criterion) => {
+      const apiVersions =
+        response?.single_recommandation?.[criterion]?.value || [];
+
+      /*
+       * Never keep more than 3 versions.
+       */
+      const versions = apiVersions.slice(0, MAX_GENERATED_VERSIONS);
+
+      setSingleRecommandation((previous) => ({
+        ...previous,
+
+        [criterion]: {
+          ...previous?.[criterion],
+
+          ...response?.single_recommandation?.[criterion],
+
+          value: versions,
+        },
+      }));
+
+      setValue(`single_recommandation.${criterion}`, versions);
+    },
+
+    onError: (error) => {
+      if (axios.isAxiosError(error)) {
+        const message =
+          error.response?.data?.detail ||
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to generate recommendation";
+
+        toast.error(message);
+
+        return;
+      }
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate recommendation",
+      );
+    },
+  });
+
+  /*
+   * ============================================================
+   * CONDITIONAL RETURNS
+   *
+   * These are AFTER all hooks.
+   * ============================================================
+   */
+
+  if (isLoading) {
+    return <TabSpinnerFallback />;
+  }
 
   const actions = data?.actions;
 
-  if (!actions?.models?.length) return null;
+  if (!actions?.models?.length) {
+    return null;
+  }
 
   const models = actions.models;
+
   const criteria = actions.criteria || {};
 
   const criterionKeys = [
@@ -246,7 +338,9 @@ export default function RecommendationsTabContent({
     const value = getModelName(model);
 
     if (value === "GPT") return "ChatGPT";
+
     if (value === "GEMINI") return "Gemini";
+
     if (value === "CLAUDE") return "Claude";
 
     return value;
@@ -334,7 +428,9 @@ export default function RecommendationsTabContent({
   ): RecommendationSection | undefined => {
     const model = getModel(modelName);
 
-    if (!model) return undefined;
+    if (!model) {
+      return undefined;
+    }
 
     return model[criterion];
   };
@@ -361,7 +457,9 @@ export default function RecommendationsTabContent({
       .map((item) => Number(item.impact || 0))
       .filter((impact) => impact > 0);
 
-    if (!impacts.length) return 0;
+    if (!impacts.length) {
+      return 0;
+    }
 
     return impacts.reduce((sum, impact) => sum + impact, 0) / impacts.length;
   };
@@ -377,7 +475,9 @@ export default function RecommendationsTabContent({
       .map((model) => getCriterionScore(model, criterion))
       .filter((score) => score > 0);
 
-    if (!scores.length) return 0;
+    if (!scores.length) {
+      return 0;
+    }
 
     return Math.round(
       scores.reduce((sum, score) => sum + score, 0) / scores.length,
@@ -414,142 +514,34 @@ export default function RecommendationsTabContent({
   };
 
   const formatImpact = (impact: number) => {
-    if (!impact) return "0";
+    if (!impact) {
+      return "0";
+    }
 
     return Number.isInteger(impact) ? String(impact) : impact.toFixed(1);
   };
 
   /*
    * ============================================================
-   * NEW: Generated versions helpers
+   * Generate next version
    * ============================================================
    */
 
-  const getGeneratedVersions = (criterion: CriterionKey) => {
-    return singleRecommandation?.[criterion]?.value || [];
-  };
-
-  /*
-   * Get ALL recommendations for the selected
-   * criterion from the 3 existing models.
-   *
-   * actions.models is NOT changed.
-   */
-  const getAllModelRecommendations = (criterion: CriterionKey) => {
-    return {
-      chatgpt: getSection("GPT", criterion)?.recommendations || [],
-
-      gemini: getSection("GEMINI", criterion)?.recommendations || [],
-
-      claude: getSection("CLAUDE", criterion)?.recommendations || [],
-    };
-  };
-
-  /*
-   * ============================================================
-   * ONE API / ONE MUTATION
-   * ============================================================
-   */
-
-  const generateMutation = useMutation({
-    mutationFn: async (criterion: CriterionKey) => {
-      /*
-       * FIX:
-       *
-       * Make sure the URL contains the product ID.
-       */
-      if (!productID) {
-        throw new Error("Product ID is missing from the URL");
-      }
-
-      const existingVersions = getGeneratedVersions(criterion);
-
-      const response = await api.post<GenerateResponse>(GENERATE_ENDPOINT, {
-        /*
-         * FIX:
-         *
-         * Send productID from the URL as product_id.
-         *
-         * Number() is kept because your Product ID
-         * is expected to be an integer.
-         */
-        product_id: Number(productID),
-
-        criterion,
-
-        recommendations: getAllModelRecommendations(criterion),
-
-        versions: existingVersions,
-      });
-
-      return response.data;
-    },
-
-    onSuccess: (response, criterion) => {
-      const apiVersions =
-        response?.single_recommandation?.[criterion]?.value || [];
-
-      /*
-       * Keep only the allowed number of versions.
-       */
-      const versions = apiVersions.slice(0, MAX_GENERATED_VERSIONS);
-
-      setSingleRecommandation((previous) => ({
-        ...previous,
-
-        [criterion]: {
-          ...previous?.[criterion],
-
-          ...response?.single_recommandation?.[criterion],
-
-          value: versions,
-        },
-      }));
-
-      setValue(`single_recommandation.${criterion}`, versions);
-    },
-
-    onError: (error) => {
-      if (axios.isAxiosError(error)) {
-        const message =
-          error.response?.data?.detail ||
-          error.response?.data?.message ||
-          error.message ||
-          "Failed to generate recommendation";
-
-        toast.error(message);
-        return;
-      }
-
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to generate recommendation",
-      );
-    },
-  });
-
-  /*
-   * ============================================================
-   * NEW: Generate next version
-   * ============================================================
-   */
   const handleGenerate = (criterion: CriterionKey) => {
     const versions = getGeneratedVersions(criterion);
 
-    /*
-     * Never allow more than MAX_GENERATED_VERSIONS.
-     */
     if (versions.length >= MAX_GENERATED_VERSIONS) {
       return;
     }
 
-    /*
-     * Same API for Version 1, Version 2,
-     * and Version 3.
-     */
     generateMutation.mutate(criterion);
   };
+
+  /*
+   * ============================================================
+   * Existing recommendation renderer
+   * ============================================================
+   */
 
   const renderRecommendation = (item: RecommendationItem, index: number) => {
     return (
@@ -791,14 +783,12 @@ export default function RecommendationsTabContent({
               <div
                 onClick={() => handleCriterionClick(criterion)}
                 className={`
-                    grid grid-cols-[minmax(280px,1.8fr)_1fr_1fr_1fr_120px]
-                    items-center px-6 py-6 cursor-pointer
-                    transition-colors
-                    ${isExpanded ? "bg-slate-50/60" : "hover:bg-slate-50/60"}
-                    ${
-                      criterion !== "pricing" ? "border-b border-slate-100" : ""
-                    }
-                  `}
+                  grid grid-cols-[minmax(280px,1.8fr)_1fr_1fr_1fr_120px]
+                  items-center px-6 py-6 cursor-pointer
+                  transition-colors
+                  ${isExpanded ? "bg-slate-50/60" : "hover:bg-slate-50/60"}
+                  ${criterion !== "pricing" ? "border-b border-slate-100" : ""}
+                `}
               >
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
@@ -869,8 +859,8 @@ export default function RecommendationsTabContent({
               {isExpanded && (
                 <div className="bg-slate-50/70 border-b border-slate-200 p-6">
                   {/* =====================================================
-                        NEW: GENERATE AREA
-                        ===================================================== */}
+                      GENERATE AREA
+                      ===================================================== */}
 
                   <div
                     onClick={(event) => event.stopPropagation()}
@@ -907,8 +897,8 @@ export default function RecommendationsTabContent({
                   </div>
 
                   {/* =====================================================
-                        NEW: GENERATED VERSIONS
-                        ===================================================== */}
+                      GENERATED VERSIONS
+                      ===================================================== */}
 
                   {generatedVersions.length > 0 && (
                     <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
@@ -958,8 +948,8 @@ export default function RecommendationsTabContent({
                   )}
 
                   {/* =====================================================
-                        EXISTING MODEL UI - UNCHANGED
-                        ===================================================== */}
+                      EXISTING MODEL UI
+                      ===================================================== */}
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {renderModelExpandedColumn("GPT", criterion)}
