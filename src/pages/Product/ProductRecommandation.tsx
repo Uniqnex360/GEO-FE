@@ -99,8 +99,8 @@ export default function RecommendationsTabContent({
    * URL:
    * /product/:productID
    */
-  const { productID } = useParams<{
-    productID: string;
+  const { id:productID } = useParams<{
+    id: string;
   }>();
 
   /*
