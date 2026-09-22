@@ -563,36 +563,23 @@ export default function ProductReport({ reportId }: ProductReportProps) {
   }, [scores]);
 
   /* =======================================================
-     OPPORTUNITIES
+     ACTION PLAN & PRIORITY
+     Combined to avoid repeating the same recommendations.
   ======================================================= */
 
-  const opportunities = useMemo(() => {
-    return criteriaRows.map((row) => {
-      const recommendation = getBestRecommendation(product, row.criterion);
-
-      return {
-        ...row,
-        opportunity: getRecommendationText(recommendation),
-      };
-    });
-  }, [criteriaRows, product]);
-
-  /* =======================================================
-     PRIORITY ACTIONS
-  ======================================================= */
-
-  const priorityActions = useMemo(() => {
+  const actionPlan = useMemo(() => {
     return criteriaRows.map((row) => {
       const recommendation = getBestRecommendation(product, row.criterion);
 
       const action =
         recommendation?.action ||
         recommendation?.recommendation ||
-        "See recommendation.";
+        getRecommendationText(recommendation);
 
       return {
         ...row,
         priority: getPriority(row.score),
+        impact: recommendation?.impact,
         action,
       };
     });
@@ -996,113 +983,83 @@ export default function ProductReport({ reportId }: ProductReportProps) {
 
           <section className="pt-2">
             {/* =================================================
-                04 OPPORTUNITIES
-            ================================================= */}
-
-            <SectionTitle
-              number="04"
-              title="Top Content & Visibility Opportunities"
-            />
-
-            <p className="mb-5 text-sm leading-6 text-gray-600">
-              The opportunities below are taken directly from the
-              recommendations generated for each criterion.
-            </p>
-
-            <div className="overflow-hidden border border-gray-300">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="w-[120px] border-b border-gray-300 px-3 py-3 text-left text-xs font-bold text-gray-700">
-                      Criteria
-                    </th>
-
-                    <th className="w-[80px] border-b border-gray-300 px-3 py-3 text-center text-xs font-bold text-gray-700">
-                      Score
-                    </th>
-
-                    <th className="border-b border-gray-300 px-3 py-3 text-left text-xs font-bold text-gray-700">
-                      Opportunity / finding
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {opportunities.map((row) => (
-                    <tr key={row.criterion}>
-                      <td className="border-b border-gray-200 px-3 py-3 align-top text-xs font-semibold text-gray-900">
-                        {row.label}
-                      </td>
-
-                      <td className="border-b border-gray-200 px-3 py-3 text-center align-top text-xs font-semibold text-gray-900">
-                        {row.score}%
-                      </td>
-
-                      <td className="border-b border-gray-200 px-3 py-3 align-top text-xs leading-5 text-gray-600">
-                        {row.opportunity}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* =================================================
-                05 PRIORITY ACTION PLAN
+                04 ACTION PLAN & PRIORITY
             ================================================= */}
 
             <div className="mt-12">
-              <SectionTitle number="05" title="Priority Action Plan" />
+              <SectionTitle number="04" title="Action Plan & Priority" />
 
               <p className="mb-5 text-sm leading-6 text-gray-600">
-                Actions are taken from the highest-impact recommendation
-                available for each criterion.
+                Recommended actions are consolidated below with their
+                corresponding priority so the same recommendation is not
+                repeated across separate sections.
               </p>
 
-              <div className="overflow-hidden border border-gray-300">
-                <table className="w-full border-collapse">
+              <div className="overflow-hidden rounded-lg border border-gray-300">
+                <table className="w-full table-fixed border-collapse">
                   <thead>
                     <tr className="bg-gray-50">
-                      <th className="w-[120px] border-b border-gray-300 px-3 py-3 text-left text-xs font-bold text-gray-700">
+                      <th className="w-[16%] border-b border-gray-300 px-3 py-3 text-left text-xs font-bold text-gray-700">
                         Criteria
                       </th>
 
-                      <th className="w-[100px] border-b border-gray-300 px-3 py-3 text-center text-xs font-bold text-gray-700">
+                      <th className="w-[10%] border-b border-gray-300 px-3 py-3 text-center text-xs font-bold text-gray-700">
+                        Score
+                      </th>
+
+                      <th className="w-[14%] border-b border-gray-300 px-3 py-3 text-center text-xs font-bold text-gray-700">
                         Priority
                       </th>
 
-                      <th className="border-b border-gray-300 px-3 py-3 text-left text-xs font-bold text-gray-700">
-                        Recommended action
+                      <th className="w-[60%] border-b border-gray-300 px-3 py-3 text-left text-xs font-bold text-gray-700">
+                        Action / Finding
                       </th>
                     </tr>
                   </thead>
 
                   <tbody>
-                    {priorityActions.map((row) => (
-                      <tr key={row.criterion}>
-                        <td className="border-b border-gray-200 px-3 py-3 align-top text-xs font-semibold text-gray-900">
-                          {row.label}
-                        </td>
+                    {actionPlan.map((row) => {
+                      const rowHighlight =
+                        row.priority === "HIGH"
+                          ? "bg-red-50"
+                          : row.priority === "MEDIUM"
+                            ? "bg-yellow-50"
+                            : "bg-green-50";
 
-                        <td className="border-b border-gray-200 px-3 py-3 text-center align-top">
-                          <span
-                            className={`text-xs font-semibold ${
-                              row.priority === "HIGH"
-                                ? "text-red-600"
-                                : row.priority === "MEDIUM"
-                                  ? "text-yellow-600"
-                                  : "text-green-600"
-                            }`}
-                          >
-                            {row.priority}
-                          </span>
-                        </td>
+                      const priorityClasses =
+                        row.priority === "HIGH"
+                          ? "border-red-200 bg-red-100 text-red-700"
+                          : row.priority === "MEDIUM"
+                            ? "border-yellow-200 bg-yellow-100 text-yellow-700"
+                            : "border-green-200 bg-green-100 text-green-700";
 
-                        <td className="border-b border-gray-200 px-3 py-3 align-top text-xs leading-5 text-gray-600">
-                          {row.action}
-                        </td>
-                      </tr>
-                    ))}
+                      return (
+                        <tr
+                          key={row.criterion}
+                          className={`${rowHighlight} transition-colors`}
+                        >
+                          <td className="border-b border-gray-200 px-3 py-3 align-top text-xs font-semibold text-gray-900">
+                            {row.label}
+                          </td>
+
+                          <td className="border-b border-gray-200 px-3 py-3 text-center align-top text-xs font-semibold text-gray-900">
+                            {row.score}%
+                          </td>
+
+                          <td className="border-b border-gray-200 px-3 py-3 text-center align-top">
+                            <span
+                              className={`inline-flex min-w-[70px] justify-center rounded-full border px-2.5 py-1 text-[10px] font-bold ${priorityClasses}`}
+                            >
+                              {row.priority}
+                            </span>
+                          </td>
+
+                          <td className="border-b border-gray-200 px-3 py-3 align-top text-xs leading-5 text-gray-700">
+                            {row.action}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
