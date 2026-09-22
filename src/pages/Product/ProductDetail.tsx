@@ -25,6 +25,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProdoctGenerateContent from "./ProductGenerateContent";
 import ActualContentTabContent from "./ProductActualContentTab";
 import RecommendationsTabContent from "./ProductRecommandation";
+import ProductReport from "./ProductReport";
 import { tokenStorage } from "../../helpers/auth";
 
 export default function ProductDashboard() {
@@ -103,6 +104,7 @@ export default function ProductDashboard() {
     { id: "citation", label: "Citation Intelligence" },
     { id: "recommendations", label: "Recommendations" },
     { id: "generate_content", label: "Generate Content" },
+    { id: "report", label: "Report" },
     // { id: "tips", label: "Suggestions" },
   ];
 
@@ -440,6 +442,8 @@ export default function ProductDashboard() {
               isLoading={isLoading}
             />
           )}
+
+          {activeTab === "report" && <ProductReport reportId={currentIdNum} />}
         </main>
       </div>
     </>
