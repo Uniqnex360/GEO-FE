@@ -428,7 +428,7 @@ export default function Product() {
 
       {headerActionsContainer &&
         createPortal(
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-5 flex-wrap">
             <button
               onClick={() => {
                 setSelectedProduct(null);
@@ -452,6 +452,7 @@ export default function Product() {
                 shadow-sm
                 transition-all
                 cursor-pointer
+                whitespace-nowrap
               "
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -505,8 +506,8 @@ export default function Product() {
       ========================================== */}
 
       <div className="px-1 py-1 flex justify-between items-center gap-4">
-        <div className="flex w-full mb-2">
-          <div className="w-64">
+        <div className="flex flex-col sm:flex-row w-full mb-2 gap-3 sm:gap-0">
+          <div className="w-full sm:w-64">
             <AppMultiSelect
               options={brandOptions}
               value={selectedBrands}
@@ -515,7 +516,7 @@ export default function Product() {
             />
           </div>
 
-          <div className="w-1/2 ml-auto">
+          <div className="w-full sm:w-1/2 sm:ml-auto">
             <AppSearch
               value={localSearch}
               onChange={handleSearchChange}
@@ -686,45 +687,49 @@ export default function Product() {
             </p>
           </div>
         ) : (
-          products.map((product) => {
-            const analytics = (product as any)?.analytics;
+          <div className="w-full overflow-x-auto pb-1">
+            <div className="xl:min-w-[1180px] space-y-3">
+              {products.map((product) => {
+                const analytics = (product as any)?.analytics;
 
-            const productUrl =
-              (product as any)?.product_url ||
-              (product as any)?.url ||
-              "HARD CODE";
+                const productUrl =
+                  (product as any)?.product_url ||
+                  (product as any)?.url ||
+                  "HARD CODE";
 
-            const image =
-              (product as any)?.image || (product as any)?.image_url || "";
+                const image =
+                  (product as any)?.image || (product as any)?.image_url || "";
 
-            const gpt = analytics?.by_engine?.chatgpt?.visibility_rate ?? 0;
+                const gpt = analytics?.by_engine?.chatgpt?.visibility_rate ?? 0;
 
-            const gemini = analytics?.by_engine?.gemini?.visibility_rate ?? 0;
+                const gemini =
+                  analytics?.by_engine?.gemini?.visibility_rate ?? 0;
 
-            const claude =
-              analytics?.by_engine?.anthropic?.visibility_rate ?? 0;
+                const claude =
+                  analytics?.by_engine?.anthropic?.visibility_rate ?? 0;
 
-            const overall = analytics?.visibility_rate ?? 0;
+                const overall = analytics?.visibility_rate ?? 0;
 
-            const hasAnalysis = (analytics?.total_queries ?? 0) > 0;
+                const hasAnalysis = (analytics?.total_queries ?? 0) > 0;
 
-            /*
-             * Persistent analysis state.
-             *
-             * This comes from the module-level
-             * queue, so it survives Product
-             * unmounting/remounting.
-             */
-            const currentAnalysis = analysisStatus[product.id];
+                /*
+                 * Persistent analysis state.
+                 *
+                 * This comes from the module-level
+                 * queue, so it survives Product
+                 * unmounting/remounting.
+                 */
+                const currentAnalysis = analysisStatus[product.id];
 
-            const isAnalyzing = currentAnalysis?.loading ?? false;
+                const isAnalyzing = currentAnalysis?.loading ?? false;
 
-            const isQueued = currentAnalysis?.message === "Queued for analysis";
+                const isQueued =
+                  currentAnalysis?.message === "Queued for analysis";
 
-            return (
-              <div
-                key={product.id}
-                className=" 
+                return (
+                  <div
+                    key={product.id}
+                    className=" 
       bg-white 
       border 
       border-slate-200 
@@ -733,26 +738,41 @@ export default function Product() {
       shadow-sm 
       hover:shadow-md 
       transition-shadow 
+      min-w-0
     "
-              >
-                <div
-                  className=" 
-        flex 
-        items-center 
-        gap-6 
-        px-6 
-        py-6 
+                  >
+                    {/* ==================================
+                    CARD ROW
+                    Stacks vertically on small screens
+                    (image -> details -> scores -> actions),
+                    goes horizontal from sm breakpoint up.
+                ================================== */}
+                    <div
+                      className="
+        flex
+        flex-col
+        gap-4
+        px-4
+        py-5
+        xl:grid
+        xl:grid-cols-[72px_minmax(300px,1fr)_430px_260px]
+        xl:items-center
+        xl:gap-5
+        xl:px-5
+        xl:py-5
       "
-                >
-                  {/* ================================== 
+                    >
+                      {/* ================================== 
           PRODUCT IMAGE / ICON 
       ================================== */}
 
-                  <div
-                    className=" 
+                      <div
+                        className=" 
           flex-shrink-0 
-          w-20 
-          h-20 
+          w-14
+          h-14
+          xl:w-[72px]
+          xl:h-[72px] 
           rounded-2xl 
           bg-slate-50 
           flex 
@@ -760,280 +780,297 @@ export default function Product() {
           justify-center 
           overflow-hidden 
         "
-                  >
-                    {image ? (
-                      <img
-                        src={image}
-                        alt={product.name || "Product"}
-                        className=" 
+                      >
+                        {image ? (
+                          <img
+                            src={image}
+                            alt={product.name || "Product"}
+                            className=" 
               w-full 
               h-full 
               object-contain 
             "
-                      />
-                    ) : (
-                      <Package
-                        className=" 
+                          />
+                        ) : (
+                          <Package
+                            className=" 
               w-9 
               h-9 
               text-slate-400 
             "
-                      />
-                    )}
-                  </div>
+                          />
+                        )}
+                      </div>
 
-                  {/* ================================== 
+                      {/* ================================== 
           PRODUCT DETAILS 
       ================================== */}
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Link
-                        to={`/admin/product/${product.id}`}
-                        state={{
-                          productIds,
-                        }}
-                        title={product.name || ""}
-                        className=" 
-              text-xl 
+                      <div className="min-w-0 w-full xl:max-w-full">
+                        <div className="flex flex-wrap items-center gap-3 min-w-0">
+                          <Link
+                            to={`/admin/product/${product.id}`}
+                            state={{
+                              productIds,
+                            }}
+                            title={product.name || ""}
+                            className=" 
+              text-base
+              xl:text-lg 
               font-semibold 
               text-slate-900 
               hover:text-cyan-600 
               transition-colors 
               truncate 
               min-w-0
+              max-w-full
             "
-                      >
-                        {product.name || ""}
-                      </Link>
+                          >
+                            {product.name || ""}
+                          </Link>
 
-                      {/* STATUS */}
+                          {/* STATUS */}
 
-                      {isAnalyzing ? (
-                        <span
-                          className=" 
+                          {isAnalyzing ? (
+                            <span
+                              className=" 
                 flex-shrink-0 
                 inline-flex 
                 items-center 
                 gap-1.5 
-                px-3 
-                py-1 
+                px-2.5
+                py-0.5
                 rounded-full 
                 bg-blue-50 
                 border 
                 border-blue-200 
                 text-blue-700 
-                text-sm 
+                text-xs
                 font-medium 
               "
-                        >
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        </span>
-                      ) : currentAnalysis?.message === "Analysis completed" ? (
-                        <span
-                          className=" 
+                            >
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            </span>
+                          ) : currentAnalysis?.message ===
+                            "Analysis completed" ? (
+                            <span
+                              className=" 
                 flex-shrink-0 
                 inline-flex 
                 items-center 
                 gap-1.5 
-                px-3 
-                py-1 
+                px-2.5
+                py-0.5
                 rounded-full 
                 bg-emerald-50 
                 border 
                 border-emerald-200 
                 text-emerald-700 
-                text-sm 
+                text-xs
                 font-medium 
               "
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          Analysis completed
-                        </span>
-                      ) : hasAnalysis ? (
-                        <span
-                          className=" 
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              Analysis completed
+                            </span>
+                          ) : hasAnalysis ? (
+                            <span
+                              className=" 
                 flex-shrink-0 
                 inline-flex 
                 items-center 
                 gap-1.5 
-                px-3 
-                py-1 
+                px-2.5
+                py-0.5
                 rounded-full 
                 bg-emerald-50 
                 border 
                 border-emerald-200 
                 text-emerald-700 
-                text-sm 
+                text-xs
                 font-medium 
               "
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          Analyzed
-                        </span>
-                      ) : (
-                        <span
-                          className=" 
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              Analyzed
+                            </span>
+                          ) : (
+                            <span
+                              className=" 
                 flex-shrink-0 
                 inline-flex 
                 items-center 
                 gap-1.5 
-                px-3 
-                py-1 
+                px-2.5
+                py-0.5
                 rounded-full 
                 bg-slate-50 
                 border 
                 border-slate-200 
                 text-slate-600 
-                text-sm 
+                text-xs
                 font-medium 
               "
-                        >
-                          <CircleAlert className="w-4 h-4" />
-                          Needs analysis
-                        </span>
-                      )}
-                    </div>
+                            >
+                              <CircleAlert className="w-4 h-4" />
+                              Needs analysis
+                            </span>
+                          )}
+                        </div>
 
-                    {/* SKU + PRODUCT PAGE */}
+                        {/* SKU + PRODUCT PAGE */}
 
-                    <div
-                      className=" 
+                        <div
+                          className=" 
             flex 
+            flex-wrap
             items-center 
-            gap-5 
-            mt-3 
-            text-[15px] 
+            gap-x-4
+            gap-y-1
+            mt-2
+            text-xs
+            xl:text-sm 
             text-slate-400 
           "
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Tag className="w-4 h-4" />
-                        SKU: {product.sku || ""}
-                      </span>
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Tag className="w-4 h-4" />
+                            SKU: {product.sku || ""}
+                          </span>
 
-                      {productUrl !== "" ? (
-                        <a
-                          href={productUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className=" 
+                          {productUrl !== "" ? (
+                            <a
+                              href={productUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className=" 
                 flex 
                 items-center 
                 gap-1.5 
                 hover:text-cyan-600 
                 transition-colors 
               "
-                        >
-                          <Globe className="w-4 h-4" />
-                          Product page
-                          <span className="text-xs">↗</span>
-                        </a>
-                      ) : (
-                        <span className="flex items-center gap-1.5">
-                          <Globe className="w-4 h-4" />
-                          Product page
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                            >
+                              <Globe className="w-4 h-4" />
+                              Product page
+                              <span className="text-xs">↗</span>
+                            </a>
+                          ) : (
+                            <span className="flex items-center gap-1.5">
+                              <Globe className="w-4 h-4" />
+                              Product page
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
-                  {/* ================================== 
+                      {/* ================================== 
           AI SCORES 
+          Horizontally scrollable on narrow screens
+          instead of squishing/wrapping awkwardly.
       ================================== */}
 
-                  {hasAnalysis && (
-                    <div className="flex items-center flex-shrink-0">
-                      {/* GPT */}
+                      {hasAnalysis && (
+                        <div className="min-w-0 w-full xl:w-[430px] overflow-x-auto flex-shrink-0 -mx-1 xl:mx-0">
+                          <div className="flex items-center px-1 xl:px-0 w-max xl:w-full">
+                            {/* GPT */}
 
-                      <div className="w-24 text-center">
-                        <div className="text-[30px] leading-none font-bold text-emerald-600">
-                          {gpt}
-                        </div>
+                            <div className="w-16 xl:w-20 text-center">
+                              <div className="text-xl xl:text-[26px] leading-none font-bold text-emerald-600">
+                                {gpt}
+                              </div>
 
-                        <div className="text-sm text-slate-400 mt-2">GPT</div>
-                      </div>
+                              <div className="text-xs xl:text-sm text-slate-400 mt-2">
+                                GPT
+                              </div>
+                            </div>
 
-                      {/* GEMINI */}
+                            {/* GEMINI */}
 
-                      <div className="w-24 text-center">
-                        <div className="text-[30px] leading-none font-bold text-blue-600">
-                          {gemini}
-                        </div>
+                            <div className="w-16 xl:w-20 text-center">
+                              <div className="text-xl xl:text-[26px] leading-none font-bold text-blue-600">
+                                {gemini}
+                              </div>
 
-                        <div className="text-sm text-slate-400 mt-2">
-                          Gemini
-                        </div>
-                      </div>
+                              <div className="text-xs xl:text-sm text-slate-400 mt-2">
+                                Gemini
+                              </div>
+                            </div>
 
-                      {/* CLAUDE */}
+                            {/* CLAUDE */}
 
-                      <div className="w-24 text-center">
-                        <div className="text-[30px] leading-none font-bold text-amber-600">
-                          {claude}
-                        </div>
+                            <div className="w-16 xl:w-20 text-center">
+                              <div className="text-xl xl:text-[26px] leading-none font-bold text-amber-600">
+                                {claude}
+                              </div>
 
-                        <div className="text-sm text-slate-400 mt-2">
-                          Claude
-                        </div>
-                      </div>
+                              <div className="text-xs xl:text-sm text-slate-400 mt-2">
+                                Claude
+                              </div>
+                            </div>
 
-                      {/* DIVIDER */}
+                            {/* DIVIDER */}
 
-                      <div className="w-px h-14 bg-slate-200 mx-3" />
+                            <div className="w-px h-12 xl:h-14 bg-slate-200 mx-2 xl:mx-3 flex-shrink-0" />
 
-                      {/* OVERALL */}
+                            {/* OVERALL */}
 
-                      <div className="w-24 text-center">
-                        <div className="text-[30px] leading-none font-bold text-slate-900">
-                          {overall}
-                        </div>
+                            <div className="w-16 xl:w-20 text-center">
+                              <div className="text-xl xl:text-[26px] leading-none font-bold text-slate-900">
+                                {overall}
+                              </div>
 
-                        <div className="text-sm text-slate-400 mt-2">
-                          Overall
-                        </div>
-                      </div>
+                              <div className="text-xs xl:text-sm text-slate-400 mt-2">
+                                Overall
+                              </div>
+                            </div>
 
-                      {/* TOKENS - ADMIN ONLY */}
+                            {/* TOKENS - ADMIN ONLY */}
 
-                      {isAdmin && (
-                        <div className="w-32 text-center">
-                          <div className="text-[24px] leading-none font-bold text-purple-600">
-                            {analytics?.total_tokens ?? 0}
-                          </div>
+                            {isAdmin && (
+                              <div className="w-20 xl:w-24 text-center">
+                                <div className="text-lg xl:text-[22px] leading-none font-bold text-purple-600">
+                                  {analytics?.total_tokens ?? 0}
+                                </div>
 
-                          <div className="text-sm text-slate-400 mt-2">
-                            Tokens
+                                <div className="text-xs xl:text-sm text-slate-400 mt-2">
+                                  Tokens
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
-                    </div>
-                  )}
 
-                  {/* ================================== 
+                      {/* ================================== 
           ACTIONS 
       ================================== */}
 
-                  <div
-                    className=" 
+                      <div
+                        className=" 
           flex 
           items-center 
-          gap-3 
+          gap-2
           flex-shrink-0 
+          flex-wrap
+          w-full
+          xl:w-[260px]
+          xl:flex-nowrap
+          justify-end
         "
-                  >
-                    {/* ANALYZE / RE-SCAN */}
+                      >
+                        {/* ANALYZE / RE-SCAN */}
 
-                    <button
-                      type="button"
-                      disabled={isAnalyzing}
-                      onClick={() => handleAnalyze(product)}
-                      className=" 
+                        <button
+                          type="button"
+                          disabled={isAnalyzing}
+                          onClick={() => handleAnalyze(product)}
+                          className=" 
             flex 
             items-center 
             gap-2 
-            px-5 
-            py-3 
+            px-4
+            py-2.5
             rounded-xl 
             bg-slate-100 
             hover:bg-slate-200 
@@ -1046,78 +1083,80 @@ export default function Product() {
             disabled:cursor-not-allowed 
             whitespace-nowrap 
           "
-                    >
-                      {isAnalyzing ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <Target className="w-5 h-5" />
-                      )}
+                        >
+                          {isAnalyzing ? (
+                            <Loader2 className="w-[18px] h-[18px] animate-spin" />
+                          ) : (
+                            <Target className="w-[18px] h-[18px]" />
+                          )}
 
-                      {isQueued
-                        ? "Queued"
-                        : isAnalyzing
-                          ? "Analyzing..."
-                          : hasAnalysis
-                            ? "Re-scan"
-                            : "Analyze"}
-                    </button>
+                          {isQueued
+                            ? "Queued"
+                            : isAnalyzing
+                              ? "Analyzing..."
+                              : hasAnalysis
+                                ? "Re-scan"
+                                : "Analyze"}
+                        </button>
 
-                    {/* EDIT */}
+                        {/* EDIT */}
 
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(product)}
-                      className=" 
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(product)}
+                          className=" 
             p-2 
             text-slate-400 
             hover:text-slate-700 
             transition-colors 
             cursor-pointer 
           "
-                      title="Edit"
-                    >
-                      <SquarePen className="w-5 h-5" />
-                    </button>
+                          title="Edit"
+                        >
+                          <SquarePen className="w-5 h-5" />
+                        </button>
 
-                    {/* DELETE */}
+                        {/* DELETE */}
 
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(product.id)}
-                      className=" 
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(product.id)}
+                          className=" 
             p-2 
             text-slate-400 
             hover:text-red-500 
             transition-colors 
             cursor-pointer 
           "
-                      title="Delete"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                          title="Delete"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
 
-                    {/* VIEW */}
+                        {/* VIEW */}
 
-                    <Link
-                      to={`/admin/product/${product.id}`}
-                      state={{
-                        productIds,
-                      }}
-                      className=" 
+                        <Link
+                          to={`/admin/product/${product.id}`}
+                          state={{
+                            productIds,
+                          }}
+                          className=" 
             p-2 
             text-slate-300 
             hover:text-slate-600 
             transition-colors 
           "
-                      title="View"
-                    >
-                      <ChevronRight className="w-6 h-6" />
-                    </Link>
+                          title="View"
+                        >
+                          <ChevronRight className="w-6 h-6" />
+                        </Link>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            );
-          })
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {/* ==========================================

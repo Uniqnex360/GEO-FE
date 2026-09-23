@@ -28,6 +28,9 @@ import RecommendationsTabContent from "./ProductRecommandation";
 import ProductReport from "./ProductReport";
 import { tokenStorage } from "../../helpers/auth";
 
+// 👉 CHANGE THIS to your actual product list route
+const PRODUCT_LIST_ROUTE = "/admin/product";
+
 export default function ProductDashboard() {
   const { id } = useParams();
   const location = useLocation();
@@ -106,10 +109,20 @@ export default function ProductDashboard() {
     { id: "generate_content", label: "Generate Content" },
     { id: "report", label: "Report" },
     // { id: "tips", label: "Suggestions" },
+    ...(isAdmin ? [{ id: "llm_usage", label: "LLM Usage" }] : []),
   ];
 
+  // FIX: use replace so switching tabs doesn't stack browser-history entries.
+  // This is what made the browser "Back" button step through previous tabs
+  // instead of leaving the page.
   const handleTabChange = (tabId: string) => {
-    setSearchParams({ tab: tabId }, { state: location.state });
+    setSearchParams({ tab: tabId }, { state: location.state, replace: true });
+  };
+
+  // FIX: Back button now always goes to the product list page, regardless
+  // of how many tabs were clicked before it, instead of navigate(-1).
+  const handleBackToList = () => {
+    navigate(PRODUCT_LIST_ROUTE, { replace: true });
   };
 
   // Initial full-page load loader (Only shows if we have absolutely nothing loaded yet)
@@ -160,8 +173,8 @@ export default function ProductDashboard() {
     <>
       <div className="w-full cursor-pointer flex justify-between">
         <button
-          onClick={() => navigate(-1)}
-          title="Back"
+          onClick={handleBackToList}
+          title="Back to Product List"
           className="p-2 bg-white hover:bg-slate-100 border cursor-pointer border-slate-200 rounded-lg transition-colors text-slate-500 hover:text-slate-800 shadow-sm"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -275,131 +288,23 @@ export default function ProductDashboard() {
                   </span>
 
                   <span className="text-lg font-bold text-slate-800 mt-0.5">
-                    {engine.score}%
+                    {engine.score}
                   </span>
                 </div>
               ))}
             </div>
           </div>
-
-          {/* -----------------------------------------------------------
-              ADMIN ONLY - LLM TOKEN USAGE
-              ----------------------------------------------------------- */}
-          {isAdmin && displayToken && (
-            <div className="mt-5 border-t border-slate-100 pt-5">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-800">
-                    LLM Token Usage
-                  </h3>
-
-                  <p className="text-xs text-slate-400">
-                    Token consumption for this product
-                  </p>
-                </div>
-
-                <div className="text-right">
-                  <span className="text-xs text-slate-500 block">
-                    Total Tokens
-                  </span>
-
-                  <span className="text-lg font-bold text-slate-900">
-                    {displayToken.totalTokens?.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Global Token Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <span className="text-xs text-slate-500 block">
-                    Input Tokens
-                  </span>
-
-                  <span className="text-lg font-bold text-slate-800">
-                    {displayToken.inputTokens?.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <span className="text-xs text-slate-500 block">
-                    Output Tokens
-                  </span>
-
-                  <span className="text-lg font-bold text-slate-800">
-                    {displayToken.outputTokens?.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <span className="text-xs text-slate-500 block">
-                    Total Tokens
-                  </span>
-
-                  <span className="text-lg font-bold text-slate-800">
-                    {displayToken.totalTokens?.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              {/* LLM-wise Token Breakdown */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {Object.entries(displayToken.byModel || {}).map(
-                  ([model, usage]: [string, any]) => (
-                    <div
-                      key={model}
-                      className="bg-white border border-slate-200 rounded-lg p-4"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-bold text-slate-800">
-                          {model.replace("LLMMODELS.", "")}
-                        </span>
-
-                        <span className="text-xs font-semibold text-blue-600">
-                          {usage.totalTokens?.toLocaleString()} total
-                        </span>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">Input</span>
-
-                          <span className="font-semibold text-slate-700">
-                            {usage.inputTokens?.toLocaleString()}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">Output</span>
-
-                          <span className="font-semibold text-slate-700">
-                            {usage.outputTokens?.toLocaleString()}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between text-xs border-t border-slate-100 pt-2">
-                          <span className="text-slate-500">Total</span>
-
-                          <span className="font-bold text-slate-900">
-                            {usage.totalTokens?.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ),
-                )}
-              </div>
-            </div>
-          )}
+          {/* NOTE: LLM Token Usage block removed from here.
+              It now lives in its own "LLM Usage" tab below (admin only). */}
         </header>
 
         {/* 2. ROUTER-DRIVEN TAB NAVIGATION */}
-        <nav className="flex border-b border-slate-200 mb-6 gap-2">
+        <nav className="flex border-b border-slate-200 mb-6 gap-2 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all duration-200 -mb-px ${
+              className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all duration-200 -mb-px whitespace-nowrap ${
                 activeTab === tab.id
                   ? "border-blue-600 text-blue-600 bg-white rounded-t-lg"
                   : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
@@ -444,12 +349,131 @@ export default function ProductDashboard() {
           )}
 
           {activeTab === "report" && <ProductReport reportId={currentIdNum} />}
+
+          {activeTab === "llm_usage" && isAdmin && (
+            <LLMUsageTabContent token={displayToken} />
+          )}
         </main>
       </div>
     </>
   );
 }
 
+// ---------------------------------------------------------------
+// LLM Token Usage — now its own tab (moved out of the header),
+// same fields/logic as before, tables wrapped so they scroll
+// horizontally on small screens instead of breaking layout.
+// ---------------------------------------------------------------
+function LLMUsageTabContent({ token }: { token: any }) {
+  if (!token) {
+    return (
+      <div className="bg-white border border-slate-200 rounded-xl p-6 text-sm text-slate-500">
+        No token usage data available.
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div>
+          <h3 className="text-sm font-bold text-slate-800">LLM Token Usage</h3>
+
+          <p className="text-xs text-slate-400">
+            Token consumption for this product
+          </p>
+        </div>
+
+        <div className="text-right">
+          <span className="text-xs text-slate-500 block">Total Tokens</span>
+
+          <span className="text-lg font-bold text-slate-900">
+            {token.totalTokens?.toLocaleString()}
+          </span>
+        </div>
+      </div>
+
+      {/* Global Token Summary — horizontally scrollable on narrow screens */}
+      <div className="overflow-x-auto -mx-1 mb-3">
+        <div className="grid grid-cols-3 gap-3 px-1 min-w-[480px] md:min-w-0">
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <span className="text-xs text-slate-500 block">Input Tokens</span>
+
+            <span className="text-lg font-bold text-slate-800">
+              {token.inputTokens?.toLocaleString()}
+            </span>
+          </div>
+
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <span className="text-xs text-slate-500 block">Output Tokens</span>
+
+            <span className="text-lg font-bold text-slate-800">
+              {token.outputTokens?.toLocaleString()}
+            </span>
+          </div>
+
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <span className="text-xs text-slate-500 block">Total Tokens</span>
+
+            <span className="text-lg font-bold text-slate-800">
+              {token.totalTokens?.toLocaleString()}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* LLM-wise Token Breakdown — horizontally scrollable on narrow screens */}
+      <div className="overflow-x-auto -mx-1">
+        <div className="grid grid-cols-3 gap-3 px-1 min-w-[640px] md:min-w-0">
+          {Object.entries(token.byModel || {}).map(
+            ([model, usage]: [string, any]) => (
+              <div
+                key={model}
+                className="bg-white border border-slate-200 rounded-lg p-4"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-bold text-slate-800">
+                    {model.replace("LLMMODELS.", "")}
+                  </span>
+
+                  <span className="text-xs font-semibold text-blue-600">
+                    {usage.totalTokens?.toLocaleString()} total
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-500">Input</span>
+
+                    <span className="font-semibold text-slate-700">
+                      {usage.inputTokens?.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-500">Output</span>
+
+                    <span className="font-semibold text-slate-700">
+                      {usage.outputTokens?.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-xs border-t border-slate-100 pt-2">
+                    <span className="text-slate-500">Total</span>
+
+                    <span className="font-bold text-slate-900">
+                      {usage.totalTokens?.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ),
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 // Clean text-free loading circle
 function TabSpinnerFallback() {
   return (

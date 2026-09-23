@@ -745,17 +745,17 @@ export default function RecommendationsTabContent({
             Criteria
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-bold text-emerald-500 uppercase">
+          <div className="flex items-center justify-center gap-2 text-xs font-bold text-emerald-500 uppercase">
             {getModelIcon("GPT")}
             ChatGPT
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-bold text-blue-500 uppercase">
+          <div className="flex items-center justify-center gap-2 text-xs font-bold text-blue-500 uppercase">
             {getModelIcon("GEMINI")}
             Gemini
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-bold text-orange-500 uppercase">
+          <div className="flex items-center justify-center gap-2 text-xs font-bold text-orange-500 uppercase">
             {getModelIcon("CLAUDE")}
             Claude
           </div>
